@@ -154,11 +154,11 @@ ssh minha-vps "hermes --help"
 
 ssh minha-vps "crontab -l"
 ssh minha-vps "find / -maxdepth 6 -iname '*telegram*' -o -iname '*lg-control*'"
-# -> achou /root/sap/lg-control.mjs (controle de TV LG) e confirmou que o
+# -> achou /root/restrito/lg-control.mjs (controle de TV LG) e confirmou que o
 #    Telegram é nativo do Hermes (hermes_cli/telegram_managed_bot.py)
 
-ssh minha-vps "ls -la /root/sap/"
-# -> lg-control.mjs, fetch-note.mjs, sap-storage-state.json (sessão de
+ssh minha-vps "ls -la /root/restrito/"
+# -> lg-control.mjs, fetch-note.mjs, estado-sessao.json (sessão de
 #    navegador persistida - tratado como segredo, nunca lido/copiado)
 ```
 

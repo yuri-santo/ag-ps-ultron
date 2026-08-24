@@ -9,7 +9,7 @@ O diagrama completo do sistema está no [README.md](README.md#diagrama-completo)
   fixo, `panel/`) rodando no notebook Windows, que aciona o WSL Kali
   (rede/segurança local) e abre SSH para a VPS.
 - **VPS (Docker)**: Hermes Agent (gateway de mensageria + CLI) fala com o
-  9Router (gateway de modelo) e aciona as ferramentas `/sap` e `/tools`.
+  9Router (gateway de modelo) e aciona as ferramentas `/restrito` e `/tools`.
 - Telegram e o painel físico são **duas portas de entrada para o mesmo
   agente** — não há dois agentes rodando.
 
@@ -128,7 +128,7 @@ próprios, configuráveis por sessão via flags de linha de comando:
   pré-carregados (parecido com "receitas" ou playbooks) que o agente
   injeta no contexto para saber *como* fazer uma tarefa específica bem
   (ex: uma skill de "como gerar relatório de reunião", outra de "como
-  consultar nota do SAP"). O ambiente deste projeto acumulou uma
+  consultar documento de um sistema com acesso restrito"). O ambiente deste projeto acumulou uma
   biblioteca própria de dezenas de skills ao longo do tempo — não listada
   aqui por ser específica do uso pessoal do autor, mas o mecanismo (uma
   pasta de skills carregável por nome) é reaproveitável para qualquer
@@ -144,14 +144,14 @@ hermes -t files,exec,web -s relatorio-reuniao -q "gere o relatório de hoje"
 - **`hermes dashboard`** — sobe uma UI web (porta 9119) para inspecionar
   sessões, config e status visualmente, em vez de tudo via terminal/SSH.
 
-### Ferramentas SAP e de rede (`/sap`)
+### Pesquisa em ambientes restritos e de rede (`/restrito`)
 
 Um pequeno projeto Node.js na VPS com duas ferramentas concretas:
 
 - **`lg-control.mjs`** — controla TVs LG na rede local (liga/desliga,
   comandos) — é a peça de "network (WoL/scan/TVs)" mencionada como
   capacidade do agente.
-- **`fetch-note.mjs`** — busca notas técnicas do SAP. Guarda o estado da
+- **`fetch-note.mjs`** — busca documentação técnica de um sistema com acesso restrito. Guarda o estado da
   sessão do navegador (cookies/login) num arquivo separado após a primeira
   autenticação manual, para não precisar logar de novo a cada consulta —
   **este já é, na prática, o padrão de "automação de navegador com área de
@@ -221,12 +221,17 @@ Isso entrega o valor real de "detecção de invasão" numa rede doméstica
 (dispositivo estranho conectado = alerta), sem o custo de manutenção de
 assinaturas de IDS de nível corporativo.
 
-**Raptor — a ferramenta de segurança que já existe no mesmo Kali**: o
-autor já mantém, na mesma distro WSL, um framework próprio de testes de
+**Raptor — o ferramental de pentest que já existe no mesmo Kali**: o
+autor já mantém, na mesma distro WSL, um framework de testes de
 segurança chamado **Raptor** (`/opt/raptor`), com CLI unificada
-(`raptor.py <modo>`). Não é um IDS de rede (não fica ouvindo a LAN) — é
-um **testador de segurança de código/binário/aplicação web**, com os
-modos:
+(`raptor.py <modo>`) — é literalmente a ferramenta de pentest do Kali
+usada para **proteger e atacar** de verdade os próprios dispositivos e
+aplicações da rede, não só listar o que existe (isso quem faz é o
+nmap/arp/avahi da seção acima). O modo `web`, por exemplo, serve tanto
+para auditar o próprio painel/apps quanto para testar a segurança real
+de qualquer dispositivo da LAN que exponha uma interface web (roteador,
+TV, IoT). Não fica "ouvindo" passivamente a LAN — é ativo, sob demanda,
+com os modos:
 
 | Modo      | O que faz |
 |-----------|-----------|
@@ -273,7 +278,7 @@ pontos específicos do agente:
 - **`hermes egress`** existe exatamente para isso: nenhuma ferramenta que
   o agente chama deveria precisar saber a credencial real — o proxy de
   saída injeta ela na hora da chamada.
-- **Estados de sessão de navegador (`sap-storage-state.json` e
+- **Estados de sessão de navegador (`estado-sessao.json` e
   equivalentes) são segredos** tão sensíveis quanto uma senha — permitem
   logar como o usuário sem precisar da senha. Nunca devem ir para
   controle de versão, backup público, ou ser copiados para fora da VPS
@@ -288,6 +293,48 @@ pontos específicos do agente:
   (`--toolsets`, `--skills`) e não habilitar mais do que o necessário para
   o uso real.
 
+## Filosofia do agente
+
+O Ag-PS-Ultron não é construído para um único caso de uso fixo — é uma
+**base sólida e de propósito geral** (Hermes + 9Router + canais de
+mensageria + ferramentas próprias), que se expande de duas formas
+deliberadamente separadas:
+
+1. **Pedindo ao agente, em conversa, para usar o que ele já tem** — o
+   Hermes já sabe gerar relatório, checar status, controlar TV, navegar
+   com login persistido etc.; boa parte do "crescimento" é simplesmente
+   descobrir e pedir novas combinações do que já existe (um toolset
+   diferente, uma skill diferente, um prompt mais específico).
+2. **Desenvolvendo por fora e plugando** — quando falta uma capacidade de
+   verdade nova (uma integração, uma automação, um script), ela é
+   construída como código externo (uma skill nova, uma ferramenta em
+   `/restrito` ou `/tools`, um toolset novo) e só depois oferecida ao
+   agente para chamar.
+
+O que este projeto **não** faz de propósito: deixar o agente reescrever
+ou expandir a própria arquitetura sozinho, de forma autônoma, só a
+partir de uma conversa. Mesmo o Hermes se descrevendo como "self-
+improving" (cria/ajusta skills a partir do uso), a decisão de adicionar
+uma capacidade nova de peso continua sendo humana e externa — o agente
+aprende a usar melhor o que tem, não decide sozinho expandir seu próprio
+raio de ação.
+
+### Base de conhecimento pessoal — NotebookLM + biblioteca em PDF
+
+Complementando o próprio modelo de IA, existe uma camada de pesquisa
+paralela: uma biblioteca pessoal de livros em PDF, carregada no
+[NotebookLM](https://notebooklm.google.com) (Google), usada como um RAG
+(Retrieval-Augmented Generation) sobre esse material específico — o
+NotebookLM responde perguntas ancoradas exatamente nos PDFs carregados,
+em vez de conhecimento geral do modelo. Hoje isso é um fluxo **manual**
+do usuário (consulta feita direto no NotebookLM, em paralelo ao agente),
+não uma chamada automática que o Hermes faz sozinho — mas é uma fonte de
+"conhecimento verdadeiro" real que informa decisões, no mesmo espírito
+de "prover a base" descrito acima: dá para automatizar essa ponte no
+futuro (ex: um toolset que consulta a API do NotebookLM), sem que isso
+mude a filosofia — continuaria sendo um recurso que o agente *usa*
+quando pedido, não algo que ele cria/expande sozinho.
+
 ## Possíveis expansões
 
 Ambas as expansões abaixo são capacidades do **agente (Ultron/Hermes, na
@@ -296,7 +343,7 @@ texto/voz ou por um novo botão); quem executaria a automação, guardaria
 a sessão de login e geraria o resultado é sempre o Hermes.
 
 - **Automação de navegador com login, como capacidade genérica do
-  agente**: hoje `fetch-note.mjs` é uma automação específica para SAP,
+  agente**: hoje `fetch-note.mjs` é uma automação específica para aquele sistema,
   rodando junto do agente na VPS; generalizar esse mesmo padrão (sessão
   de navegador persistida + Playwright) para outros sites com login
   daria ao Hermes a capacidade de logar em qualquer site e repetir

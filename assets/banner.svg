@@ -1,12 +1,12 @@
-<svg width="1200" height="360" viewBox="0 0 1200 360" xmlns="http://www.w3.org/2000/svg">
+<svg width="1200" height="460" viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="round">
-      <rect x="0" y="0" width="1200" height="360" rx="14" ry="14"/>
+      <rect x="0" y="0" width="1200" height="460" rx="14" ry="14"/>
     </clipPath>
   </defs>
 
   <g clip-path="url(#round)">
-    <rect width="1200" height="360" fill="#0d0f14"/>
+    <rect width="1200" height="460" fill="#0d0f14"/>
 
     <!-- barra de titulo -->
     <rect x="0" y="0" width="1200" height="44" fill="#15171e"/>
@@ -17,23 +17,41 @@
           font-size="14" fill="#8d96a8">yuri@ultron: ~/ag-ps-ultron</text>
     <line x1="0" y1="44" x2="1200" y2="44" stroke="#22252d" stroke-width="1"/>
 
-    <!-- corpo do terminal -->
-    <g font-family="Consolas,'SF Mono',ui-monospace,monospace" font-size="20">
-      <text x="30" y="90" fill="#3da9fc">yuri@ultron</text><text x="185" y="90" fill="#8d96a8">:</text><text x="197" y="90" fill="#7c5cff">~</text><text x="212" y="90" fill="#e8ecf3">$ hermes status</text>
-
-      <text x="30" y="128" fill="#e8ecf3" font-weight="bold" font-size="22">◆ AG-PS-ULTRON — Agente de IA pessoal</text>
-
-      <text x="30" y="164" fill="#8d96a8">  ├─ Hermes Agent ..................</text><text x="345" y="164" fill="#22c55e">running</text>
-      <text x="30" y="192" fill="#8d96a8">  ├─ 9Router (gateway de modelo) ....</text><text x="410" y="192" fill="#22c55e">online</text>
-      <text x="30" y="220" fill="#8d96a8">  ├─ Telegram gateway ...............</text><text x="380" y="220" fill="#22c55e">connected</text>
-      <text x="30" y="248" fill="#8d96a8">  ├─ Painel físico (PWA) ............</text><text x="380" y="248" fill="#22c55e">online</text>
-      <text x="30" y="276" fill="#8d96a8">  └─ WSL Kali (rede + segurança) ....</text><text x="425" y="276" fill="#f59e0b">ready</text>
-
-      <text x="30" y="316" fill="#3da9fc">yuri@ultron</text><text x="185" y="316" fill="#8d96a8">:</text><text x="197" y="316" fill="#7c5cff">~</text><text x="212" y="316" fill="#e8ecf3">$ </text>
-      <rect x="248" y="300" width="12" height="22" fill="#e8ecf3"/>
+    <!-- logo em ASCII art (bloco a esquerda, estilo "pixels para caracteres") -->
+    <g font-family="Consolas,'SF Mono',ui-monospace,monospace" font-size="22" font-weight="bold">
+      <text x="50" y="108" fill="#3da9fc">      ▄▄▄▄▄▄▄▄▄▄▄▄</text>
+      <text x="50" y="134" fill="#4fb0fb">    ▄████████████▄</text>
+      <text x="50" y="160" fill="#5cb6f9">   ██▓▓▓▓▓▓▓▓▓▓▓▓██</text>
+      <text x="50" y="186" fill="#68b9f2">   ██▓▓██▓▓▓▓██▓▓██</text>
+      <text x="50" y="212" fill="#74baea">   ██▓▓██▓▓▓▓██▓▓██</text>
+      <text x="50" y="238" fill="#82b8e0">   ██▓▓▓▓▓▓▓▓▓▓▓▓██</text>
+      <text x="50" y="264" fill="#8fb3d6">   ██▓▓░░░░░░░░▓▓██</text>
+      <text x="50" y="290" fill="#9caed0">   ██▓▓░░░░░░░░▓▓██</text>
+      <text x="50" y="316" fill="#a9a8ca">   ██▓▓▓▓▓▓▓▓▓▓▓▓██</text>
+      <text x="50" y="342" fill="#b39fd0">    ▀████████████▀</text>
+      <text x="50" y="368" fill="#a084e0">      █▄█▄▄▄▄█▄█</text>
+      <text x="50" y="394" fill="#8c6ce8">     ▄█▀      ▀█▄</text>
+      <text x="50" y="420" fill="#7c5cff">    ██          ██</text>
     </g>
 
-    <text x="1170" y="345" text-anchor="end" font-family="Consolas,'SF Mono',ui-monospace,monospace"
-          font-size="13" fill="#3a3f4c">24/7 · Telegram · 9Router · WireGuard</text>
+    <!-- corpo do terminal: prompt + status -->
+    <g font-family="Consolas,'SF Mono',ui-monospace,monospace" font-size="19">
+      <text x="470" y="100" fill="#3da9fc">yuri@ultron</text><text x="615" y="100" fill="#8d96a8">:</text><text x="627" y="100" fill="#7c5cff">~</text><text x="642" y="100" fill="#e8ecf3">$ hermes status</text>
+
+      <text x="470" y="140" fill="#e8ecf3" font-weight="bold" font-size="24">AG-PS-ULTRON</text>
+      <text x="470" y="164" fill="#8d96a8" font-size="15">Agente de IA pessoal — 24/7, controlável de qualquer lugar</text>
+
+      <text x="470" y="206" fill="#8d96a8">  ├─ Hermes Agent ..................</text><text x="785" y="206" fill="#22c55e">running</text>
+      <text x="470" y="234" fill="#8d96a8">  ├─ 9Router (gateway de modelo) ....</text><text x="850" y="234" fill="#22c55e">online</text>
+      <text x="470" y="262" fill="#8d96a8">  ├─ Telegram gateway ...............</text><text x="820" y="262" fill="#22c55e">connected</text>
+      <text x="470" y="290" fill="#8d96a8">  ├─ Painel físico (PWA) ............</text><text x="820" y="290" fill="#22c55e">online</text>
+      <text x="470" y="318" fill="#8d96a8">  └─ WSL Kali (rede + pentest) ......</text><text x="855" y="318" fill="#f59e0b">ready</text>
+
+      <text x="470" y="368" fill="#3da9fc">yuri@ultron</text><text x="615" y="368" fill="#8d96a8">:</text><text x="627" y="368" fill="#7c5cff">~</text><text x="642" y="368" fill="#e8ecf3">$ </text>
+      <rect x="678" y="352" width="12" height="22" fill="#e8ecf3"/>
+    </g>
+
+    <text x="1170" y="440" text-anchor="end" font-family="Consolas,'SF Mono',ui-monospace,monospace"
+          font-size="13" fill="#3a3f4c">24/7 · Telegram · 9Router · WireGuard · Raptor</text>
   </g>
 </svg>

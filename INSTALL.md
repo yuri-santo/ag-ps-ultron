@@ -1,7 +1,7 @@
 # Manual de instalação — construindo o seu Ag-PS-Ultron
 
 Passo a passo para instalar e configurar cada peça do zero: o Hermes
-Agent (o "Ultron"), o 9Router, as ferramentas de SAP/rede, e o painel
+Agent (o "Ultron"), o 9Router, as ferramentas de pesquisa restrita e rede, e o painel
 físico. Os comandos abaixo são os reais usados para montar este sistema
 — troque hosts/tokens/IDs pelos seus.
 
@@ -129,7 +129,7 @@ processo do gateway com Docker/systemd/pm2 conforme sua preferência — o
 `hermes status` sempre mostra o estado real, independente de como ele
 foi mantido de pé.
 
-## 3. Ferramentas próprias (SAP, controle de TV/rede)
+## 3. Ferramentas próprias (pesquisa em sistemas restritos, controle de TV/rede)
 
 Um projetinho Node.js simples ao lado do Hermes, na VPS:
 

@@ -16,7 +16,7 @@
   Agente de IA pessoal que roda <b>24/7 numa VPS</b>, acessível de qualquer
   celular via <b>Telegram</b> ou de um <b>painel físico dedicado</b> (um
   celular velho rodando a PWA "Ultron Deck"), com ferramentas próprias de
-  SAP, controle de TV/rede e agenda.
+  pesquisa em sistemas restritos, controle de TV/rede e agenda.
 </p>
 
 ---
@@ -55,7 +55,7 @@ não expor a infraestrutura real.
                                            │   └─────────────────────────────────────────┘   │
                                            │                                                 │
                                            │   ┌───────────────────┐ ┌─────────────────────┐ │
-                                           │   │  /sap             │ │  /tools             │ │
+                                           │   │  /restrito        │ │  /tools             │ │
                                            │   │  lg-control.mjs   │ │  cal_daily2.py       │ │
                                            │   │  fetch-note.mjs   │ │  MS Graph / Google   │ │
                                            │   └───────────────────┘ └─────────────────────┘ │
@@ -71,7 +71,7 @@ ponte é sempre o `panel/server.py`, via SSH.
 ## Índice
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — arquitetura completa: como o
-  Hermes, o 9Router, o Telegram, o painel físico e as ferramentas de SAP se
+  Hermes, o 9Router, o Telegram, o painel físico e as ferramentas de pesquisa restrita se
   encaixam.
 - [panel/](panel/) — o painel de controle físico (PWA + servidor local no
   Windows). Tem sua própria [ARCHITECTURE.md](panel/ARCHITECTURE.md) e
@@ -104,17 +104,24 @@ que por sua vez roteia para múltiplos modelos (Gemini, Claude, GPT-OSS via
 **Controlar TVs e dispositivos de rede** — um script Node.js (`lg-control`)
 liga/desliga e comanda TVs LG na rede local a partir de comandos do agente.
 
-**Controle e segurança de rede via WSL Kali** — descoberta completa de
-dispositivos na LAN sob demanda (nmap + ARP + mDNS), e um framework
-próprio de testes de segurança (**Raptor**: análise estática, SCA,
-fuzzing, teste de aplicação web) disponível na mesma distro para auditar
-as próprias superfícies expostas. Detecção de invasão *contínua*
-(alertar sozinho quando um dispositivo novo aparece) ainda é um design
-proposto, não implementado — ver [ARCHITECTURE.md](ARCHITECTURE.md).
+**Proteger e atacar dispositivos da própria rede via WSL Kali** —
+descoberta completa de dispositivos na LAN sob demanda (nmap + ARP +
+mDNS), somada a um framework de pentest completo (**Raptor**, o
+ferramental de pentest do próprio Kali) para testar de verdade a
+segurança dos dispositivos e aplicações da rede — não só descobrir o
+que existe, mas avaliar o quão exposto está. Detecção de invasão
+*contínua* (alertar sozinho quando um dispositivo novo aparece) ainda é
+um design proposto, não implementado — ver [ARCHITECTURE.md](ARCHITECTURE.md).
 
-**Consultar e agir sobre notas do SAP** — um script (`fetch-note`) busca
-notas técnicas do SAP, com sessão de navegador (login) já persistida, para
-não precisar autenticar a cada consulta.
+**Base de conhecimento pessoal (NotebookLM + biblioteca em PDF)** — uma
+biblioteca de livros em PDF alimenta o NotebookLM (Google), usado como
+camada de pesquisa/RAG paralela ao agente — hoje é um fluxo manual do
+usuário, não uma chamada automática do Hermes, mas é parte real da
+"inteligência" que apoia as decisões do sistema.
+
+**Pesquisar em sistemas com acesso restrito** — um script (`fetch-note`)
+busca documentação técnica em um portal com login, com sessão de
+navegador já persistida, para não precisar autenticar a cada consulta.
 
 **Mostrar a agenda do dia** — scripts de calendário na VPS (Microsoft
 Graph/WorkMail e Google Calendar) alimentam o card de reuniões do painel
@@ -133,7 +140,7 @@ para o agente.
 - **9Router** — gateway HTTP próprio, compatível com a API da OpenAI, que
   o Hermes usa como "Custom endpoint" em vez de falar direto com um
   provedor de IA.
-- **Ferramentas SAP** (`/sap`) — Node.js, com Playwright/Puppeteer para
+- **Pesquisa em ambientes restritos** (`/restrito`) — Node.js, com Playwright/Puppeteer para
   automação de navegador com sessão de login persistida.
 - **Painel físico** (`panel/`) — Python (stdlib) + PWA, ver documentação
   própria.
