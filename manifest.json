@@ -1,0 +1,11 @@
+{
+  "name": "Yuri Deck",
+  "short_name": "YuriDeck",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "icons": []
+}
