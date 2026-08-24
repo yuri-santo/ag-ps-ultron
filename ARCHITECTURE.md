@@ -75,6 +75,45 @@ Vantagem prática: trocar de modelo (ex: de Gemini para Claude) é só trocar
 a string do modelo configurado no Hermes — não precisa reconfigurar chaves
 de API em cada ferramenta que usa IA.
 
+### Como o acesso a e-mail e arquivos foi configurado
+
+**E-mail** (duas camadas diferentes, propósitos diferentes):
+- **Canal de mensageria do Hermes** (`hermes gateway`) — o e-mail como
+  *entrada/saída de conversa* com o agente (ver seção abaixo).
+- **Skill `email-manager`** — acesso a e-mail como *dado a consultar*:
+  lê/pesquisa/envia e-mail de múltiplas contas próprias. A configuração é
+  um arquivo JSON local (não versionado, não em variável de ambiente),
+  uma entrada por conta, com este formato:
+  ```json
+  [
+    {
+      "email": "...",
+      "password": "...",
+      "imap_host": "...", "imap_port": 993,
+      "smtp_host": "...", "smtp_port": 587
+    }
+  ]
+  ```
+  O ideal (ainda não é assim neste projeto) seria mover a senha de cada
+  conta para `hermes secrets` (Bitwarden/1Password) em vez de ficar em
+  texto puro nesse arquivo — ver "Pontos de extrema atenção" abaixo.
+- **Skill `agenda-workmail`** — acesso só ao *calendário* de uma conta
+  corporativa específica (AWS WorkMail), via uma ferramenta própria
+  (`workmail_cal.py`) que usa credenciais OAuth/API da própria conta, não
+  IMAP — mais restrito que `email-manager` (só agenda, não a caixa de
+  entrada inteira).
+
+**Acesso a "arquivos"** — não existe um fileserver dedicado (Samba/NFS/
+HTTP) neste projeto; o que cumpre esse papel é a skill
+`local-filesystem` (ver tabela de skills abaixo), que expõe o sistema de
+arquivos do notebook ao agente **através do túnel SSH reverso**, não de
+um serviço de arquivos separado — listar pasta, buscar por nome/tipo e
+ler arquivo viram, na prática, um comando SSH remoto (`local_fs.py ls
+...`), não uma montagem de rede. Se um fileserver de verdade (com
+autenticação e permissões próprias) fizer mais sentido no futuro, é uma
+peça nova a desenhar — hoje o "acesso a arquivo" é só mais um comando
+que o túnel reverso permite rodar.
+
 ### E-mail como canal de mensageria
 
 Assim como o Telegram, o e-mail é um dos canais de mensageria nativos do
@@ -126,13 +165,37 @@ próprios, configuráveis por sessão via flags de linha de comando:
   que o agente pode fazer sem querer.
 - **Skills** (`-s`/`--skills`) — módulos de conhecimento/procedimento
   pré-carregados (parecido com "receitas" ou playbooks) que o agente
-  injeta no contexto para saber *como* fazer uma tarefa específica bem
-  (ex: uma skill de "como gerar relatório de reunião", outra de "como
-  consultar documento de um sistema com acesso restrito"). O ambiente deste projeto acumulou uma
-  biblioteca própria de dezenas de skills ao longo do tempo — não listada
-  aqui por ser específica do uso pessoal do autor, mas o mecanismo (uma
-  pasta de skills carregável por nome) é reaproveitável para qualquer
-  domínio.
+  injeta no contexto para saber *como* fazer uma tarefa específica bem,
+  no formato padrão `SKILL.md` (frontmatter `name`/`description` +
+  instruções). No ambiente deste projeto existem **283 skills**
+  carregadas — a grande maioria (bem mais de 200) foi **importada de
+  catálogos públicos de skills** (o mesmo tipo de biblioteca compartilhada
+  usada amplamente no ecossistema de agentes de IA hoje — nomes como
+  `brainstorming`, `docx`, `codeql`, ferramentas de scraping, etc.), não é
+  conteúdo original deste projeto, então não faz sentido listar as 283
+  aqui.
+
+  As skills **genuinamente próprias** deste projeto — as que de fato
+  descrevem como o Hermes opera *este* sistema — organizadas por tarefa:
+
+  | Tarefa | Skill | O que faz |
+  |---|---|---|
+  | Agenda e e-mail | `agenda-workmail` | Gerencia a agenda de um e-mail profissional específico (AWS WorkMail): listar, buscar, criar e remover compromissos. |
+  | Agenda e e-mail | `email-manager` | Lê, pesquisa e envia e-mail em múltiplas contas (IMAP/SMTP), configuradas numa lista local de contas — não em texto puro no próprio skill. |
+  | Controle doméstico | `lg-tv` | Liga/desliga, ajusta volume e pareia com TVs LG na rede local via API WebOS; a chave de pareamento persiste após o primeiro emparelhamento. |
+  | Controle doméstico | `network` | Descobre, escaneia e liga (Wake-on-LAN) dispositivos da rede de casa, usando o notebook como "gateway" alcançável pela VPS. |
+  | Acesso remoto a máquinas próprias | `local-filesystem` | Lista pastas, drives e busca/lê arquivos no notebook, via um túnel SSH reverso do notebook até a VPS. |
+  | Acesso remoto a máquinas próprias | `local-machine-access` | Executa comandos arbitrários no notebook Windows pelo mesmo túnel reverso — é a base sobre a qual `local-filesystem` roda. |
+  | Acesso remoto a máquinas próprias | `phone-access` | O celular físico do painel roda um userland Linux completo (via um app tipo UserLAnd/proot) dentro do Android, acessível por SSH através de uma interface WireGuard dedicada — o agente pode rodar comandos diretamente *dentro* do celular, não só através da PWA do painel. |
+  | Segurança / pentest de rede | `kali-tools` | Um container Kali dedicado, rodando **na própria VPS** (não no WSL do notebook), com ferramental de pentest ativo (`nmap`, `hydra`, `gobuster`, `dirb`, `nikto`, `sqlmap`, `netcat`, `sshpass`) que o agente pode invocar para varrer, testar senha, enumerar diretório ou explorar dispositivos alcançáveis pelas VPNs — **esta é a peça real de "proteger e atacar dispositivos da rede"**, distinta do WSL Kali do notebook (que cobre descoberta passiva de LAN + Raptor para código/app). |
+  | Pesquisa em ambiente restrito | `sap-web` | Consulta documentos técnicos de um sistema com login, reaproveitando a sessão de navegador já autenticada. |
+
+  Isso muda uma peça do diagrama de rede: o notebook e o celular do
+  painel não são só "clientes" — eles são **alcançáveis a partir da VPS**
+  por túnel SSH reverso e WireGuard, então o agente consegue agir sobre
+  eles diretamente (arquivo, comando, ou até um shell dentro do próprio
+  celular), não só receber comandos deles. Ver detalhes em
+  [NETWORK.md](NETWORK.md).
 
 ```bash
 hermes -t files,exec,web -s relatorio-reuniao -q "gere o relatório de hoje"
@@ -292,6 +355,49 @@ pontos específicos do agente:
   periodicamente quais ferramentas/skills estão habilitadas para ele
   (`--toolsets`, `--skills`) e não habilitar mais do que o necessário para
   o uso real.
+
+### Pontos de extrema atenção
+
+Esta lista existe porque o levantamento real deste projeto encontrou (ou
+poderia facilmente resultar em) cada um destes problemas — não são
+teóricos:
+
+- **Túnel reverso exposto ao mundo, não só à VPS**: um `ssh -R` mal
+  configurado (ou um `sshd` com `GatewayPorts yes` na VPS) faz o serviço
+  redirecionado (ex: a porta do painel) responder em `0.0.0.0` da VPS —
+  ou seja, **público na internet**, não só acessível de dentro da VPS.
+  Sempre confira com `ss -tlnp` (na VPS) se a porta redirecionada aparece
+  como `127.0.0.1:PORTA` (correto) ou `0.0.0.0:PORTA`/`*:PORTA`
+  (exposto). Corrija forçando bind local no comando do túnel
+  (`-R 127.0.0.1:PORTA:...`) e garantindo `GatewayPorts no` (padrão) no
+  `sshd_config` da VPS.
+- **Credenciais de e-mail em JSON de texto puro** (`accounts.json` da
+  skill de e-mail): funciona, mas é o ponto mais frágil do projeto hoje —
+  qualquer leitura desse arquivo (backup mal feito, outro processo na
+  mesma VPS, um bug de path traversal em qualquer ferramenta) expõe
+  senha de e-mail direto. Migrar para `hermes secrets` (Bitwarden/
+  1Password) é a correção natural, ainda pendente.
+- **Chaves SSH sem passphrase por necessidade operacional**
+  (`BatchMode=yes`, automações sem humano digitando senha): a segurança
+  inteira dessas chaves passa a depender de quem tem acesso ao disco onde
+  elas ficam — trate o disco da VPS e do notebook com o mesmo cuidado que
+  trataria as próprias senhas.
+- **Ferramental de pentest ativo (`kali-tools`) rodando sob o mesmo
+  agente que aceita comando por Telegram**: se o Telegram do agente for
+  comprometido (perda do celular, token de bot vazado), quem controla o
+  chat também consegue rodar `hydra`/`sqlmap`/`nmap` contra a própria
+  rede de casa. Considere isolar esse toolset atrás de uma confirmação
+  extra, ou não habilitá-lo por padrão em toda sessão (`-t` explícito só
+  quando necessário).
+- **Acesso SSH direto ao userland do celular** (`phone-access`): é mais
+  uma máquina Linux de verdade na sua rede de confiança — trate
+  atualizações, chave e usuário com o mesmo padrão de qualquer servidor,
+  não como "é só um celular".
+- **Ir de repositório privado para público multiplica o custo de um
+  erro de sanitização**: revise este repositório inteiro (`grep`
+  case-insensitive por IPs, hostnames, e-mails, tokens, chat IDs) toda
+  vez antes de um `git push`, não só na primeira publicação — é fácil um
+  detalhe real voltar a aparecer numa edição futura.
 
 ## Filosofia do agente
 

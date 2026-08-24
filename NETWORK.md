@@ -80,7 +80,77 @@ sudo wg show
 # conectado, e contadores de bytes trocados
 ```
 
-## 3. Isolamento entre projetos na mesma VPS
+## 3. O celular do painel também é um nó Linux completo
+
+Além de rodar a PWA do painel num navegador, o mesmo celular físico roda
+um **userland Linux completo dentro do Android** (via um app estilo
+UserLAnd/proot, sem root), com um servidor SSH leve (dropbear) escutando
+numa porta alternativa. Esse userland entra na mesma interface WireGuard
+do celular (`wgphone`) — então, de dentro da VPS, o agente consegue abrir
+uma sessão SSH diretamente no celular e rodar comandos nele, não só
+receber toques na PWA.
+
+```bash
+# exemplo (chave dedicada, porta alternativa do dropbear)
+ssh -i ~/.ssh/chave_celular -p <PORTA_DROPBERD> usuario@<IP_DO_CELULAR_NA_VPN>
+```
+
+Isso é útil para automações que precisam rodar "de dentro" do celular
+(não só disparadas por ele) — mas também é uma superfície de ataque a
+mais: trate a chave SSH do celular e o `dropbear` com o mesmo cuidado de
+qualquer outro servidor exposto (chave forte, sem senha, `PermitRootLogin
+no` equivalente, atualização do userland em dia).
+
+## 4. Túnel SSH reverso: a VPS alcançando o notebook
+
+Separado do WireGuard, existe um **túnel SSH reverso** do notebook até a
+VPS — o notebook, de dentro de casa, abre uma conexão de saída para a
+VPS e pede para ela redirecionar uma porta local de volta para o próprio
+notebook (`ssh -R`). Isso permite que a VPS "alcance" o notebook mesmo
+sem o notebook ter IP público nem qualquer porta aberta no roteador de
+casa — a conexão é sempre iniciada de dentro para fora.
+
+```bash
+# rodando NO NOTEBOOK, mantém a VPS com acesso de volta numa porta local dela
+ssh -R <PORTA_TUNEL>:localhost:22 -N -i ~/.ssh/chave_reversa usuario@sua-vps
+```
+
+Na VPS, isso vira uma skill do agente que roda comandos ou lê arquivos
+do notebook por esse túnel (`ssh -p <PORTA_TUNEL> usuario@localhost
+"<comando>"`) — é o mecanismo por trás de qualquer automação que precise
+tocar no sistema de arquivos ou rodar algo diretamente no Windows do
+notebook a partir do agente. Para manter esse túnel sempre ativo (ele cai
+se a rede de casa cair), use `autossh` ou um serviço systemd com restart
+automático em vez de um `ssh -R` manual.
+
+**Nunca** deixe essa porta redirecionada acessível para além do
+`localhost` da VPS (evite `-R 0.0.0.0:porta:...`) — o objetivo é a VPS
+falar com o notebook, não o mundo inteiro.
+
+## 5. Pentest ativo contra a própria rede, a partir da VPS
+
+Um container Kali dedicado roda **na própria VPS** (separado do WSL Kali
+do notebook), com ferramental de pentest ativo (`nmap`, `hydra`,
+`gobuster`, `dirb`, `nikto`, `sqlmap`, `netcat`, `sshpass`). Como a VPS
+alcança a rede de casa pelos túneis acima (reverso para o notebook,
+WireGuard para o celular), esse container consegue testar de verdade a
+segurança dos próprios dispositivos domésticos — não só descobrir o que
+existe, mas tentar validar o quão exposto está (força bruta de senha,
+enumeração de diretório web, scan de vulnerabilidade), sob demanda e
+contra a própria rede.
+
+```bash
+# exemplos (wrapper que roda o comando dentro do container Kali da VPS)
+kali nmap -sV -p 1-1000 <IP_DO_ALVO_NA_VPN>
+kali nikto -h <IP_DO_ALVO_NA_VPN>
+```
+
+Use esse ferramental só contra dispositivos que você mesmo possui e
+autoriza testar — mesmo sendo "sua própria rede", ferramentas como
+`hydra`/`sqlmap` são de força bruta/exploração ativa e podem derrubar um
+serviço frágil (ex: uma câmera IP barata) sem querer.
+
+## 6. Isolamento entre projetos na mesma VPS
 
 Se a VPS hospeda mais de um projeto (o autor também roda outros
 sistemas na mesma máquina), vale manter interfaces WireGuard separadas
