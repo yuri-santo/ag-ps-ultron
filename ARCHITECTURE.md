@@ -188,7 +188,7 @@ próprios, configuráveis por sessão via flags de linha de comando:
   | Acesso remoto a máquinas próprias | `local-machine-access` | Executa comandos arbitrários no notebook Windows pelo mesmo túnel reverso — é a base sobre a qual `local-filesystem` roda. |
   | Acesso remoto a máquinas próprias | `phone-access` | O celular físico do painel roda um userland Linux completo (via um app tipo UserLAnd/proot) dentro do Android, acessível por SSH através de uma interface WireGuard dedicada — o agente pode rodar comandos diretamente *dentro* do celular, não só através da PWA do painel. |
   | Segurança / pentest de rede | `kali-tools` | Um container Kali dedicado, rodando **na própria VPS** (não no WSL do notebook), com ferramental de pentest ativo (`nmap`, `hydra`, `gobuster`, `dirb`, `nikto`, `sqlmap`, `netcat`, `sshpass`) que o agente pode invocar para varrer, testar senha, enumerar diretório ou explorar dispositivos alcançáveis pelas VPNs — **esta é a peça real de "proteger e atacar dispositivos da rede"**, distinta do WSL Kali do notebook (que cobre descoberta passiva de LAN + Raptor para código/app). |
-  | Pesquisa em ambiente restrito | `sap-web` | Consulta documentos técnicos de um sistema com login, reaproveitando a sessão de navegador já autenticada. |
+  | Pesquisa em ambiente restrito | `portal-restrito` | Consulta documentos técnicos de um sistema com login, reaproveitando a sessão de navegador já autenticada. |
 
   Isso muda uma peça do diagrama de rede: o notebook e o celular do
   painel não são só "clientes" — eles são **alcançáveis a partir da VPS**
