@@ -30,30 +30,36 @@ não expor a infraestrutura real.
 
 ## Diagrama completo
 
-```mermaid
-flowchart TB
-    subgraph CASA["Casa"]
-        PHONE_T["Celular (qualquer um)<br/>app Telegram"]
-        PHONE_P["Celular velho fixo<br/>PWA do painel (panel/)"]
-        NB["Notebook Windows<br/>panel/server.py :8090"]
-        WSL["WSL Kali Linux<br/>nmap + arp + avahi (descoberta de rede)<br/>Raptor (scan/web/sca/fuzz — seguranca de app)"]
-        PHONE_P <-->|HTTP LAN| NB
-        NB -->|chama| WSL
-    end
-
-    subgraph VPS["VPS Linux (Docker)"]
-        HERMES["Hermes Agent<br/>gateway de mensageria + CLI"]
-        ROUTER["9Router<br/>gateway HTTP compat. OpenAI"]
-        SAP["/sap<br/>lg-control.mjs (TV/rede)<br/>fetch-note.mjs (notas SAP, login persistido)"]
-        TOOLS["/tools<br/>cal_daily2.py + MS Graph/Google (agenda)"]
-        HERMES -->|modelo de IA| ROUTER
-        HERMES -->|aciona| SAP
-        HERMES -->|aciona| TOOLS
-    end
-
-    PHONE_T -->|mensagem| HERMES
-    NB -->|SSH: status, send, agenda| HERMES
-    ROUTER -->|roteia| MODELOS["Gemini / Claude / GPT-OSS / OpenRouter"]
+```
+                                 ┌───────────────────────────┐
+                                 │   Celular (qualquer um)    │
+                                 │       app Telegram         │
+                                 └─────────────┬─────────────┘
+                                               │ mensagem
+                                               ▼
+ ┌───────────────────────┐    HTTP LAN    ┌───────────────────────────────────────────────┐
+ │  Celular velho fixo    │◄──────────────►│                                                 │
+ │  PWA "Ultron Deck"     │                │               VPS Linux (Docker)               │
+ ├───────────────────────┤                │                                                 │
+ │  Notebook Windows      │      SSH       │   ┌─────────────────────────────────────────┐   │
+ │  panel/server.py :8090 │───────────────►│   │  Hermes Agent                           │   │
+ └───────────┬───────────┘                │   │  - gateway Telegram / e-mail             │   │
+             │ chama                      │   │  - CLI: status, send, model, secrets...  │   │
+             ▼                            │   └───────────────────┬─────────────────────┘   │
+ ┌───────────────────────┐                │                       │ modelo de IA             │
+ │  WSL Kali Linux        │                │                       ▼                         │
+ │  nmap + arp + avahi    │                │   ┌─────────────────────────────────────────┐   │
+ │  Raptor (sec. de app)  │                │   │  9Router — gateway compat. OpenAI        │   │
+ └───────────────────────┘                │   │  roteia: Gemini / Claude / GPT-OSS /     │   │
+                                           │   │          OpenRouter                       │   │
+                                           │   └─────────────────────────────────────────┘   │
+                                           │                                                 │
+                                           │   ┌───────────────────┐ ┌─────────────────────┐ │
+                                           │   │  /sap             │ │  /tools             │ │
+                                           │   │  lg-control.mjs   │ │  cal_daily2.py       │ │
+                                           │   │  fetch-note.mjs   │ │  MS Graph / Google   │ │
+                                           │   └───────────────────┘ └─────────────────────┘ │
+                                           └───────────────────────────────────────────────┘
 ```
 
 O painel físico e o Telegram são duas portas de entrada para o **mesmo**
