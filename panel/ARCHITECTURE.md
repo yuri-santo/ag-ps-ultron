@@ -101,7 +101,7 @@ Agendada do Windows**, não um serviço do Windows tradicional — porque as
 ações (abrir apps visíveis, `SendKeys`, RDP) precisam rodar dentro de uma
 sessão interativa de usuário, o que um Windows Service não tem por padrão.
 
-Configuração da tarefa (`YuriStreamDeck`):
+Configuração da tarefa (`AgPSUltronDeck`):
 - **Gatilho**: `LogonTrigger` — inicia quando o usuário faz login.
 - **Principal**: `InteractiveToken` — roda como o usuário logado, com
   acesso à área de trabalho.

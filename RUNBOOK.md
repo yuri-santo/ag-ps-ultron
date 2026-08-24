@@ -23,12 +23,12 @@ Get-NetTCPConnection -LocalPort 8090 -ErrorAction SilentlyContinue
 
 # Achou a Tarefa Agendada responsável por subir o servidor
 Get-ScheduledTask | Where-Object { $_.TaskName -like "*deck*" }
-# -> YuriStreamDeck, State: Ready (não Running)
+# -> AgPSUltronDeck, State: Ready (não Running)
 
-Get-ScheduledTaskInfo -TaskName "YuriStreamDeck" | Select-Object LastRunTime, LastTaskResult
+Get-ScheduledTaskInfo -TaskName "AgPSUltronDeck" | Select-Object LastRunTime, LastTaskResult
 # -> LastTaskResult: 3221225786 (0xC000013A = STATUS_CONTROL_C_EXIT)
 
-Export-ScheduledTask -TaskName "YuriStreamDeck"
+Export-ScheduledTask -TaskName "AgPSUltronDeck"
 # -> confirmou: Action = python.exe (não pythonw.exe), LogonTrigger, RestartOnFailure
 #    Count=999 Interval=PT1M (deveria reiniciar sozinho e não estava reiniciando)
 ```
@@ -46,14 +46,14 @@ $action = New-ScheduledTaskAction `
   -Execute "C:\Users\<usuario>\AppData\Local\Programs\Python\Python314\pythonw.exe" `
   -Argument '"D:\GIT\streamdeck\server.py"' `
   -WorkingDirectory "D:\GIT\streamdeck"
-Set-ScheduledTask -TaskName "YuriStreamDeck" -Action $action
+Set-ScheduledTask -TaskName "AgPSUltronDeck" -Action $action
 
-$task = Get-ScheduledTask -TaskName "YuriStreamDeck"
+$task = Get-ScheduledTask -TaskName "AgPSUltronDeck"
 $settings = $task.Settings
 $settings.Hidden = $true
-Set-ScheduledTask -TaskName "YuriStreamDeck" -Settings $settings
+Set-ScheduledTask -TaskName "AgPSUltronDeck" -Settings $settings
 
-Start-ScheduledTask -TaskName "YuriStreamDeck"
+Start-ScheduledTask -TaskName "AgPSUltronDeck"
 Invoke-WebRequest -Uri "http://127.0.0.1:8090/health" -UseBasicParsing
 # -> {"ok": true}
 ```
@@ -80,9 +80,9 @@ toda chamada de `subprocess.Popen`/`subprocess.run` do `server.py`
 
 ```powershell
 # Reiniciar o servidor depois de editar o server.py
-Stop-ScheduledTask -TaskName "YuriStreamDeck"
+Stop-ScheduledTask -TaskName "AgPSUltronDeck"
 Get-Process pythonw -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-ScheduledTask -TaskName "YuriStreamDeck"
+Start-ScheduledTask -TaskName "AgPSUltronDeck"
 Invoke-WebRequest -Uri "http://127.0.0.1:8090/health" -UseBasicParsing
 ```
 
@@ -94,7 +94,7 @@ git status   # (dentro de D:\GIT\streamdeck) -> não era um repo git
 gh auth status
 
 # Pasta separada para a cópia sanitizada — NUNCA editar os arquivos reais
-mkdir -p /d/GIT/yuri-deck
+mkdir -p /d/GIT/ag-ps-ultron
 ```
 
 Cópias de `server.py`/`panel.html` foram escritas com IPs, hostnames de
@@ -103,12 +103,12 @@ EC2, e-mails e nomes de VPS reais trocados por placeholders
 `sed`/edição do original, sempre reescrevendo a cópia do zero.
 
 ```bash
-cd /d/GIT/yuri-deck
+cd /d/GIT/ag-ps-ultron
 git init
 git add -A
 git commit -m "..."
 
-gh repo create yuri-deck --private --source=. --remote=origin --push
+gh repo create ag-ps-ultron --private --source=. --remote=origin --push
 # -> falhou: "Host key verification failed" (chave do GitHub não confiável)
 
 ssh-keyscan -t rsa,ed25519 github.com >> ~/.ssh/known_hosts
@@ -116,7 +116,7 @@ git push -u origin HEAD
 # -> falhou: "Permission denied (publickey)" (sem chave SSH configurada p/ GitHub)
 
 # Solução: trocar para HTTPS usando o token já autenticado do gh
-git remote set-url origin https://github.com/yuri-santo/yuri-deck.git
+git remote set-url origin https://github.com/yuri-santo/ag-ps-ultron.git
 gh auth setup-git
 git push -u origin HEAD
 # -> sucesso
@@ -126,7 +126,7 @@ git push -u origin HEAD
 confirma que nada sensível escapou da sanitização:
 
 ```bash
-grep -riE "10\.20\.20\.10|187\.77\.35\.139|minha-vps|meudominio|meuusuario" /d/GIT/yuri-deck
+grep -riE "10\.20\.20\.10|187\.77\.35\.139|minha-vps|meudominio|meuusuario" /d/GIT/ag-ps-ultron
 # -> No files found
 ```
 
@@ -184,7 +184,7 @@ ainda não implementado.
 ## 7. Reestruturação e rename do repositório
 
 ```bash
-cd /d/GIT/yuri-deck
+cd /d/GIT/ag-ps-ultron
 mkdir -p panel
 git mv server.py panel/server.py
 git mv panel.html panel/panel.html
@@ -194,7 +194,7 @@ git mv ARCHITECTURE.md panel/ARCHITECTURE.md
 # (novo README.md e ARCHITECTURE.md escritos na raiz, cobrindo o sistema todo)
 ```
 
-**Cuidado real que aconteceu aqui:** um `mv /d/GIT/yuri-deck /d/GIT/ag-ps-ultron`
+**Cuidado real que aconteceu aqui:** um `mv /d/GIT/ag-ps-ultron /d/GIT/ag-ps-ultron`
 foi tentado para renomear a pasta, mas `D:\GIT\Ag-ps-Ultron` **já existia**
 como a pasta de trabalho real do usuário (com dados reais, não
 versionada). Como o Windows é case-insensitive, o `mv` colocou o
@@ -204,7 +204,7 @@ Detectado antes do `git add` com um `ls` de verificação; corrigido
 movendo o repositório para um caminho separado:
 
 ```bash
-mv "/d/GIT/Ag-ps-Ultron/yuri-deck" "/d/GIT/ag-ps-ultron-repo"
+mv "/d/GIT/Ag-ps-Ultron/ag-ps-ultron" "/d/GIT/ag-ps-ultron-repo"
 # -> pasta de trabalho real do usuário (D:\GIT\Ag-ps-Ultron) ficou intocada
 ```
 
@@ -213,7 +213,7 @@ cd /d/GIT/ag-ps-ultron-repo
 git add -A
 git commit -m "..."
 
-gh repo rename ag-ps-ultron --repo yuri-santo/yuri-deck --yes
+gh repo rename ag-ps-ultron --repo yuri-santo/ag-ps-ultron --yes
 git remote set-url origin https://github.com/yuri-santo/ag-ps-ultron.git
 git push -u origin HEAD
 

@@ -1,6 +1,6 @@
 {
-  "name": "Yuri Deck",
-  "short_name": "YuriDeck",
+  "name": "Ultron Deck",
+  "short_name": "UltronDeck",
   "start_url": "/",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone"],

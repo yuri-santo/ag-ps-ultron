@@ -1,0 +1,60 @@
+<svg width="1200" height="260" viewBox="0 0 1200 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0c10"/>
+      <stop offset="55%" stop-color="#12141c"/>
+      <stop offset="100%" stop-color="#0a0c10"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3da9fc"/>
+      <stop offset="100%" stop-color="#7c5cff"/>
+    </linearGradient>
+    <radialGradient id="glowL" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3da9fc" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#3da9fc" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowR" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#7c5cff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="260" fill="url(#bg)"/>
+  <circle cx="120" cy="60" r="220" fill="url(#glowL)"/>
+  <circle cx="1080" cy="210" r="240" fill="url(#glowR)"/>
+
+  <!-- grade sutil de fundo -->
+  <g stroke="#3da9fc" stroke-opacity="0.06">
+    <line x1="0" y1="40" x2="1200" y2="40"/>
+    <line x1="0" y1="80" x2="1200" y2="80"/>
+    <line x1="0" y1="180" x2="1200" y2="180"/>
+    <line x1="0" y1="220" x2="1200" y2="220"/>
+  </g>
+
+  <!-- icone: nós conectados (agente + rede) -->
+  <g transform="translate(70,90)" fill="none" stroke="url(#accent)" stroke-width="3">
+    <circle cx="40" cy="40" r="16" fill="#0a0c10" stroke="url(#accent)"/>
+    <circle cx="110" cy="10" r="10" fill="#0a0c10"/>
+    <circle cx="110" cy="70" r="10" fill="#0a0c10"/>
+    <circle cx="10" cy="90" r="8" fill="#0a0c10"/>
+    <line x1="52" y1="32" x2="102" y2="14"/>
+    <line x1="52" y1="48" x2="102" y2="66"/>
+    <line x1="30" y1="52" x2="16" y2="83"/>
+    <circle cx="40" cy="40" r="4" fill="#3da9fc"/>
+  </g>
+
+  <text x="190" y="128" font-family="Consolas, 'SF Mono', ui-monospace, monospace"
+        font-size="56" font-weight="700" fill="#e8ecf3" letter-spacing="1">
+    AG-PS-ULTRON
+  </text>
+  <text x="192" y="164" font-family="Consolas, 'SF Mono', ui-monospace, monospace"
+        font-size="20" fill="#8d96a8" letter-spacing="0.5">
+    Agente de IA pessoal — Telegram · 9Router · Hermes · Painel físico · Rede
+  </text>
+
+  <rect x="190" y="188" width="820" height="1" fill="#22252d"/>
+  <text x="190" y="216" font-family="Consolas, 'SF Mono', ui-monospace, monospace"
+        font-size="15" fill="#3da9fc">
+    24/7 na VPS · controlável de qualquer celular · arquitetura 100% documentada
+  </text>
+</svg>

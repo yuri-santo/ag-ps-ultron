@@ -1,14 +1,32 @@
-# Ag-PS-Ultron — Agente Pessoal
+<p align="center">
+  <img src="assets/banner.svg" alt="Ag-PS-Ultron" width="100%">
+</p>
 
-Sistema de agente de IA pessoal, controlável de qualquer lugar (Telegram) ou
-de um painel físico (um celular velho rodando o "Yuri Deck"), rodando 24/7
-numa VPS, com acesso a ferramentas próprias (SAP, controle de rede/TV,
-agenda).
+<p align="center">
+  <img src="https://img.shields.io/badge/status-em%20produção-22c55e" alt="status">
+  <img src="https://img.shields.io/badge/plataforma-Windows%20%2B%20Linux%20VPS-3da9fc" alt="plataforma">
+  <img src="https://img.shields.io/badge/agente-Hermes-7c5cff" alt="hermes">
+  <img src="https://img.shields.io/badge/router-9Router-3da9fc" alt="9router">
+  <img src="https://img.shields.io/badge/mensageria-Telegram-26A5E4" alt="telegram">
+  <img src="https://img.shields.io/badge/painel-PWA-1c1f28" alt="pwa">
+  <img src="https://img.shields.io/badge/uso-pessoal-8d96a8" alt="uso pessoal">
+</p>
 
-Este repositório documenta a arquitetura completa do sistema. Assim como no
-componente `panel/`, hostnames, IPs, IDs de chat e tokens reais foram
-substituídos por placeholders — o objetivo é documentar *como o sistema é
-construído*, não expor a infraestrutura real.
+<p align="center">
+  Agente de IA pessoal que roda <b>24/7 numa VPS</b>, acessível de qualquer
+  celular via <b>Telegram</b> ou de um <b>painel físico dedicado</b> (um
+  celular velho rodando a PWA "Ultron Deck"), com ferramentas próprias de
+  SAP, controle de TV/rede e agenda.
+</p>
+
+---
+
+Este repositório documenta a arquitetura completa do sistema, de ponta a
+ponta: como cada peça foi construída, como instalar/configurar cada
+agente do zero, e como tudo se conecta. Assim como no componente
+`panel/`, hostnames, IPs, IDs de chat e tokens reais foram substituídos
+por placeholders — o objetivo é documentar *como o sistema é construído*,
+não expor a infraestrutura real.
 
 ## Diagrama completo
 
@@ -55,6 +73,11 @@ ponte é sempre o `panel/server.py`, via SSH.
 - [RUNBOOK.md](RUNBOOK.md) — passo a passo real de tudo que foi
   diagnosticado, corrigido e construído neste projeto, comando por
   comando, com observações.
+- [INSTALL.md](INSTALL.md) — manual passo a passo para instalar e
+  configurar o Hermes e o 9Router do zero, e construir o seu próprio
+  Ag-PS-Ultron.
+- [NETWORK.md](NETWORK.md) — configuração de rede completa: LAN de casa
+  e acesso remoto via WireGuard.
 
 ## O que o sistema é capaz de fazer
 

@@ -2,45 +2,16 @@
 
 ## Visão geral
 
-```
-                          ┌─────────────────────────┐
-                          │   Celular (qualquer um)   │
-                          │        Telegram           │
-                          └────────────┬─────────────┘
-                                       │ mensagem
-                                       ▼
-┌──────────────────────┐    HTTP/8090   ┌───────────────────────────────────────────┐
-│  Celular velho fixo    │◀──────────────▶│              VPS (Linux, Docker)            │
-│  panel/ (Yuri Deck)    │   (LAN, via     │                                             │
-│  no notebook Windows   │───┐SSH p/ações)│  ┌───────────────────────────────────────┐  │
-└──────────────────────┘   │              │  │  Hermes Agent (gateway de mensageria)  │  │
-                            ▼              │  │  - recebe Telegram/e-mail              │  │
-                  ┌──────────────────┐     │  │  - roda como serviço Docker            │  │
-                  │  WSL (Kali Linux) │     │  │  - fala com o modelo via 9Router        │  │
-                  │  nmap + arp+avahi │     └──┴───────────────┬───────────────────────┘  │
-                                          │  │  - recebe Telegram/e-mail              │  │
-                                          │  │  - roda como serviço Docker            │  │
-                                          │  │  - fala com o modelo via 9Router        │  │
-                                          │  └───────────────┬───────────────────────┘  │
-                                          │                  │ chama                     │
-                                          │                  ▼                           │
-                                          │  ┌───────────────────────────────────────┐  │
-                                          │  │  9Router (gateway de IA próprio)       │  │
-                                          │  │  API compatível c/ OpenAI               │  │
-                                          │  │  roteia p/ Gemini/Claude/GPT-OSS/       │  │
-                                          │  │  OpenRouter conforme o modelo pedido    │  │
-                                          │  └───────────────────────────────────────┘  │
-                                          │                                             │
-                                          │  ┌───────────────────────────────────────┐  │
-                                          │  │  Ferramentas próprias (/sap, /tools)    │  │
-                                          │  │  - lg-control.mjs  (TV/rede LAN)        │  │
-                                          │  │  - fetch-note.mjs  (notas SAP, login    │  │
-                                          │  │    de navegador persistido)             │  │
-                                          │  │  - cal_daily2.py + MS Graph/Google       │  │
-                                          │  │    (agenda do dia)                      │  │
-                                          │  └───────────────────────────────────────┘  │
-                                          └───────────────────────────────────────────┘
-```
+O diagrama completo do sistema está no [README.md](README.md#diagrama-completo)
+(raiz do repositório). Resumo em camadas:
+
+- **Casa**: Telegram (qualquer celular) + painel físico (celular velho
+  fixo, `panel/`) rodando no notebook Windows, que aciona o WSL Kali
+  (rede/segurança local) e abre SSH para a VPS.
+- **VPS (Docker)**: Hermes Agent (gateway de mensageria + CLI) fala com o
+  9Router (gateway de modelo) e aciona as ferramentas `/sap` e `/tools`.
+- Telegram e o painel físico são **duas portas de entrada para o mesmo
+  agente** — não há dois agentes rodando.
 
 O sistema tem **dois pontos de entrada** para o mesmo agente:
 
@@ -48,7 +19,7 @@ O sistema tem **dois pontos de entrada** para o mesmo agente:
    qualquer lugar com internet. É o gateway de mensageria nativo do
    próprio Hermes (não é um bot separado escrito do zero).
 2. **Painel físico** (`panel/`) — um celular velho dedicado, sempre ligado,
-   rodando a PWA do Yuri Deck. Serve dois papéis: (a) atalhos físicos para
+   rodando a PWA do Ultron Deck. Serve dois papéis: (a) atalhos físicos para
    ações locais do notebook (abrir apps, RDP, volume), e (b) uma caixa de
    texto/voz que manda comandos para o mesmo agente via SSH — ou seja, é
    *outra porta de entrada* para o Hermes, complementar ao Telegram.
@@ -103,6 +74,75 @@ um provedor de IA. Roteia por prefixo de modelo:
 Vantagem prática: trocar de modelo (ex: de Gemini para Claude) é só trocar
 a string do modelo configurado no Hermes — não precisa reconfigurar chaves
 de API em cada ferramenta que usa IA.
+
+### E-mail como canal de mensageria
+
+Assim como o Telegram, o e-mail é um dos canais de mensageria nativos do
+`hermes gateway` (`hermes status` mostra `Email ✓ configured`). Configurar
+segue o mesmo fluxo do Telegram — pelo assistente interativo:
+
+```bash
+hermes setup
+# escolher "Email" na lista de plataformas -> informar servidor SMTP/IMAP
+# e credenciais (ou apontar para um segredo já guardado via `hermes secrets`)
+```
+
+Uma vez configurado, o e-mail funciona como mais uma porta de entrada/
+saída equivalente ao Telegram: você pode mandar um e-mail para o agente
+e ele processa como uma mensagem de chat, ou o agente pode notificar por
+e-mail (`hermes send --to email ...`) do mesmo jeito que notifica por
+Telegram.
+
+### Busca na web
+
+Levantamento real do ambiente (via `hermes status`) mostra que nenhuma
+integração dedicada de busca/navegação web está configurada hoje:
+Tavily, Firecrawl, Browser Use e Browserbase aparecem todas como
+"não configuradas". Ou seja, **o agente não tem busca na web ligada por
+padrão neste setup** — qualquer resposta que pareça vir de uma busca é,
+na prática, conhecimento do próprio modelo, não uma consulta ao vivo.
+
+Para habilitar busca real, o caminho é: gerar uma chave num desses
+serviços (Tavily e Firecrawl têm planos gratuitos de teste), guardá-la
+com `hermes secrets` (não em variável de ambiente solta), e então:
+
+```bash
+hermes auth add tavily          # ou firecrawl / browser-use / browserbase
+hermes chat -t web -q "pesquise algo na internet"
+# -t web (ou o nome do toolset correspondente) habilita a ferramenta
+# de busca só para aquela sessão
+```
+
+### Toolsets e Skills — os "plugins" do agente
+
+O Hermes não tem um sistema de "plugins" no sentido tradicional (não é
+instalar um pacote separado por integração) — ele usa dois conceitos
+próprios, configuráveis por sessão via flags de linha de comando:
+
+- **Toolsets** (`-t`/`--toolsets`) — grupos de *ferramentas* que o modelo
+  pode chamar (ex: acesso a arquivos, execução de comandos, navegador,
+  busca web). Habilitar só o necessário por sessão é também uma prática
+  de segurança — quanto menos ferramentas ativas, menor a superfície do
+  que o agente pode fazer sem querer.
+- **Skills** (`-s`/`--skills`) — módulos de conhecimento/procedimento
+  pré-carregados (parecido com "receitas" ou playbooks) que o agente
+  injeta no contexto para saber *como* fazer uma tarefa específica bem
+  (ex: uma skill de "como gerar relatório de reunião", outra de "como
+  consultar nota do SAP"). O ambiente deste projeto acumulou uma
+  biblioteca própria de dezenas de skills ao longo do tempo — não listada
+  aqui por ser específica do uso pessoal do autor, mas o mecanismo (uma
+  pasta de skills carregável por nome) é reaproveitável para qualquer
+  domínio.
+
+```bash
+hermes -t files,exec,web -s relatorio-reuniao -q "gere o relatório de hoje"
+```
+
+- **`hermes plugins`** — diretório próprio para extensões mais profundas
+  do agente (além de toolsets/skills), separado do restante da
+  configuração.
+- **`hermes dashboard`** — sobe uma UI web (porta 9119) para inspecionar
+  sessões, config e status visualmente, em vez de tudo via terminal/SSH.
 
 ### Ferramentas SAP e de rede (`/sap`)
 
@@ -166,7 +206,7 @@ real:**
 
 1. Um script roda a mesma lógica de `scan_network()` periodicamente (ex:
    a cada 10 min), via Tarefa Agendada própria (mesmo padrão da
-   `YuriStreamDeck`: `pythonw.exe`, sem console, restart automático).
+   `AgPSUltronDeck`: `pythonw.exe`, sem console, restart automático).
 2. Persiste a lista de dispositivos conhecidos (IP + MAC) num arquivo
    local (`known_devices.json`).
 3. A cada rodada, compara com a lista conhecida: MAC nunca visto →
@@ -250,18 +290,33 @@ pontos específicos do agente:
 
 ## Possíveis expansões
 
-- **Formalizar a automação de navegador como capacidade genérica do
-  agente**: hoje `fetch-note.mjs` é uma automação específica para SAP;
-  generalizar esse padrão (sessão persistida + Playwright) para outros
-  sites com login daria ao agente a capacidade de "fazer ações repetitivas
-  em qualquer site" pedida como expansão — reaproveitando a mesma ideia de
-  estado de sessão salvo, e reportando resultados (relatórios, planilhas)
-  de volta via o mesmo canal (`hermes send`) já usado para Telegram.
-- **Geração de planilhas/relatórios a partir das automações de
-  navegador**: o mesmo agente que já gera relatório de reunião (no
-  `panel/`) poderia gerar `.xlsx` a partir dos dados extraídos de uma
-  automação de navegador, e enviar por Telegram ou salvar num storage
-  compartilhado.
+Ambas as expansões abaixo são capacidades do **agente (Ultron/Hermes, na
+VPS)**, não do painel físico — o painel só dispara o pedido (por
+texto/voz ou por um novo botão); quem executaria a automação, guardaria
+a sessão de login e geraria o resultado é sempre o Hermes.
+
+- **Automação de navegador com login, como capacidade genérica do
+  agente**: hoje `fetch-note.mjs` é uma automação específica para SAP,
+  rodando junto do agente na VPS; generalizar esse mesmo padrão (sessão
+  de navegador persistida + Playwright) para outros sites com login
+  daria ao Hermes a capacidade de logar em qualquer site e repetir
+  tarefas (baixar relatório, preencher formulário, extrair dado) sob
+  comando — reaproveitando a mesma ideia de estado de sessão salvo já
+  usada pelo `fetch-note.mjs`, e devolvendo o resultado pelo mesmo canal
+  (`hermes send`) já usado para o Telegram/painel. A decisão de segurança
+  que falta resolver antes de generalizar: **onde e como as credenciais
+  de cada site ficam guardadas** — via `hermes secrets` (Bitwarden/
+  1Password, já suportado pelo próprio Hermes) é a opção mais alinhada
+  com o resto da arquitetura, em vez de variável de ambiente ou `.env`.
+- **Geração de relatórios/planilhas pelo agente**: o Hermes já gera
+  relatório de reunião a partir do texto que o painel encaminha (a
+  transcrição é feita no navegador do painel, mas quem escreve o
+  relatório é o agente); o mesmo padrão — coletar dado (de uma automação
+  de navegador, por exemplo) → mandar prompt estruturado ao Hermes →
+  devolver texto — pode virar geração de planilha (`.xlsx` via
+  `openpyxl`, rodando ao lado do Hermes na VPS) a partir de dados
+  extraídos de uma automação de navegador, entregue por Telegram ou
+  salva num storage compartilhado.
 - **Dashboard unificado de status**: hoje `hermes status` e o status dos
   containers Docker são consultados via SSH sob demanda pelo painel;
   poderia virar um endpoint HTTP próprio do Hermes (via `hermes gateway`
