@@ -31,59 +31,58 @@ não expor a infraestrutura real.
 ## Diagrama completo
 
 ```
-                                 ┌───────────────────────────┐
-                                 │   Celular (qualquer um)    │
-                                 │       app Telegram         │
-                                 └─────────────┬─────────────┘
-                                               │ mensagem
-                                               ▼
- ┌───────────────────────┐    HTTP LAN    ┌───────────────────────────────────────────────┐
- │  Celular velho fixo    │◄──────────────►│                                                 │
- │  PWA "Ultron Deck"     │                │               VPS Linux (Docker)               │
- ├───────────────────────┤                │                                                 │
- │  Notebook Windows      │      SSH       │   ┌─────────────────────────────────────────┐   │
- │  panel/server.py :8090 │───────────────►│   │  Hermes Agent                           │   │
- └───────────┬───────────┘                │   │  - gateway Telegram / e-mail             │   │
-             │ chama                      │   │  - CLI: status, send, model, secrets...  │   │
-             ▼                            │   └───────────────────┬─────────────────────┘   │
- ┌───────────────────────┐                │                       │ modelo de IA             │
- │  WSL Kali Linux        │                │                       ▼                         │
- │  nmap + arp + avahi    │                │   ┌─────────────────────────────────────────┐   │
- │  Raptor (sec. de app)  │                │   │  9Router — gateway compat. OpenAI        │   │
- └───────────────────────┘                │   │  roteia: Gemini / Claude / GPT-OSS /     │   │
-                                           │   │          OpenRouter                       │   │
-                                           │   └─────────────────────────────────────────┘   │
-                                           │                                                 │
-                                           │   ┌───────────────────┐ ┌─────────────────────┐ │
-                                           │   │  /restrito        │ │  /tools             │ │
-                                           │   │  lg-control.mjs   │ │  cal_daily2.py       │ │
-                                           │   │  fetch-note.mjs   │ │  MS Graph / Google   │ │
-                                           │   └───────────────────┘ └─────────────────────┘ │
-                                           └───────────────────────────────────────────────┘
+ ┌────────────────────────┐          ┌──────────────────────────────────┐
+ │  Celular (qualquer um)  │          │  Biblioteca de PDFs → NotebookLM   │
+ │  app Telegram           │          │  RAG paralelo — fluxo manual,      │
+ └────────────┬────────────┘          │  não é chamado pelo agente         │
+              │ mensagem              └──────────────────────────────────┘
+              ▼
+ ┌──────────────────────────────────────────────────────────────────────────┐
+ │                            VPS Linux (Docker)                            │
+ │                                                                          │
+ │  ┌───────────────────────────┐  modelo de IA  ┌────────────────────────┐ │
+ │  │  Hermes Agent              │───────────────▶│  9Router                │ │
+ │  │  gateway Telegram / e-mail │                │  compat. OpenAI         │ │
+ │  │  CLI: status/send/secrets  │                │  roteia: Gemini/Claude/ │ │
+ │  └──────┬───────────────┬────┘                │  GPT-OSS/OpenRouter     │ │
+ │         │               │                      └────────────────────────┘ │
+ │         ▼               ▼                                                │
+ │  ┌────────────────┐  ┌─────────────────────────────┐                    │
+ │  │  /restrito      │  │  Kali pentest (kali-tools)    │                    │
+ │  │  /tools         │  │  nmap/hydra/gobuster/nikto/   │                    │
+ │  │  email-manager  │  │  sqlmap — testa a própria rede │                    │
+ │  └────────────────┘  └───────────────┬───────────────┘                    │
+ │                                       │ SSH reverso + WireGuard            │
+ └───────────────────────────────────────┼────────────────────────────────────┘
+                                          │
+                 ┌─────────────────────────┴─────────────────────────┐
+                 ▼                                                   ▼
+ ┌────────────────────────────┐    HTTP LAN    ┌─────────────────────────────┐
+ │  Notebook Windows            │◄──────────────▶│  Celular velho fixo           │
+ │  panel/server.py :8090       │                │  PWA "Ultron Deck"            │
+ │  WSL Kali (nmap/avahi/Raptor)│                │  + userland Linux (WireGuard) │
+ └────────────────────────────┘                │  acessível por SSH direto      │
+                                                 └─────────────────────────────┘
 ```
 
 O painel físico e o Telegram são duas portas de entrada para o **mesmo**
-agente (Hermes, na VPS) — não há dois agentes. O WSL Kali é local ao
-notebook: cobre descoberta de rede (nmap/arp/avahi) e testes de segurança
-de aplicação (Raptor), mas não fala com a VPS diretamente — quem faz essa
-ponte é sempre o `panel/server.py`, via SSH.
+agente (Hermes, na VPS) — não há dois agentes. O importante deste
+diagrama é a seta voltando da VPS para casa: o túnel SSH reverso
+(notebook) e o WireGuard (celular) não servem só para casa *falar* com a
+VPS — a VPS também consegue *agir* de volta em casa (rodar comando no
+notebook, abrir uma sessão dentro do userland do celular, escanear/testar
+a própria rede pelo container Kali). Detalhe completo de cada seta em
+[ARCHITECTURE.md](ARCHITECTURE.md) e [NETWORK.md](NETWORK.md).
 
-## Índice
+## Mapa da documentação
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — arquitetura completa: como o
-  Hermes, o 9Router, o Telegram, o painel físico e as ferramentas de pesquisa restrita se
-  encaixam.
-- [panel/](panel/) — o painel de controle físico (PWA + servidor local no
-  Windows). Tem sua própria [ARCHITECTURE.md](panel/ARCHITECTURE.md) e
-  [SETUP.md](panel/SETUP.md) detalhados.
-- [RUNBOOK.md](RUNBOOK.md) — passo a passo real de tudo que foi
-  diagnosticado, corrigido e construído neste projeto, comando por
-  comando, com observações.
-- [INSTALL.md](INSTALL.md) — manual passo a passo para instalar e
-  configurar o Hermes e o 9Router do zero, e construir o seu próprio
-  Ag-PS-Ultron.
-- [NETWORK.md](NETWORK.md) — configuração de rede completa: LAN de casa
-  e acesso remoto via WireGuard.
+| Arquivo | O que tem lá |
+|---|---|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitetura completa: Hermes, 9Router, e-mail, busca web, toolsets/skills (com tabela das skills pessoais por tarefa), NotebookLM/RAG, filosofia do agente, segurança e pontos de extrema atenção. |
+| [NETWORK.md](NETWORK.md) | Rede de ponta a ponta: LAN de casa, WireGuard, o userland Linux dentro do celular, o túnel SSH reverso até o notebook, e o container de pentest ativo na VPS. |
+| [INSTALL.md](INSTALL.md) | Manual passo a passo para instalar e configurar o Hermes e o 9Router do zero, com o passo a passo completo de conexão ao Telegram. |
+| [panel/](panel/) | O painel físico (PWA + servidor Python no Windows) — [ARCHITECTURE.md](panel/ARCHITECTURE.md) e [SETUP.md](panel/SETUP.md) próprios, incluindo requisitos do celular físico, modo quiosque e ideias de uso. |
+| [RUNBOOK.md](RUNBOOK.md) | Passo a passo real de tudo que foi diagnosticado, corrigido e construído neste projeto, comando por comando. |
 
 ## O que o sistema é capaz de fazer
 
@@ -130,20 +129,41 @@ físico, sem depender do Outlook estar aberto em lugar nenhum.
 **Um painel físico dedicado** — um celular velho, sempre ligado na tomada,
 rodando a PWA do painel (ver [panel/](panel/)) como controle físico rápido:
 abrir apps, RDP, volume, scanner de rede, e um atalho de voz/texto direto
-para o agente.
+para o agente. Esse mesmo celular também roda um **userland Linux
+completo por dentro** (acessível por SSH via WireGuard) — não é só uma
+tela, é mais um nó de rede.
+
+**Agir de volta em casa, a partir da VPS** — via túnel SSH reverso, o
+agente consegue rodar comando ou ler arquivo direto no notebook Windows
+(sem VPN, sem porta aberta no roteador); via WireGuard, consegue abrir
+sessão dentro do userland Linux do celular físico. A VPS não só recebe
+pedidos de casa — ela também alcança casa.
+
+**Gerenciar e-mail de múltiplas contas** — ler, buscar, enviar e
+organizar e-mail (IMAP/SMTP) de várias contas próprias, separado do canal
+de mensageria do Telegram/e-mail que fala com o agente.
 
 ## Stack
 
 - **Hermes** — framework de agente de IA (Python), com CLI própria, gateway
   de mensageria multiplataforma (Telegram, e-mail, WhatsApp, Slack...),
-  gerenciamento de segredos e sessões — roda como serviço Docker na VPS.
+  gerenciamento de segredos, sessões e um sistema próprio de skills
+  (`SKILL.md`) — roda como serviço Docker na VPS.
 - **9Router** — gateway HTTP próprio, compatível com a API da OpenAI, que
   o Hermes usa como "Custom endpoint" em vez de falar direto com um
   provedor de IA.
-- **Pesquisa em ambientes restritos** (`/restrito`) — Node.js, com Playwright/Puppeteer para
-  automação de navegador com sessão de login persistida.
+- **Kali (pentest ativo)** — um container Kali dedicado, rodando na
+  própria VPS, com `nmap/hydra/gobuster/dirb/nikto/sqlmap` para testar de
+  verdade a segurança dos dispositivos da rede de casa, alcançados pelos
+  túneis abaixo.
+- **WireGuard + túnel SSH reverso** — a malha de rede que conecta VPS,
+  notebook e celular físico sem expor nenhum deles diretamente à
+  internet. Ver [NETWORK.md](NETWORK.md).
+- **Pesquisa em ambientes restritos** (`/restrito`) — Node.js, com
+  Playwright/Puppeteer para automação de navegador com sessão de login
+  persistida.
 - **Painel físico** (`panel/`) — Python (stdlib) + PWA, ver documentação
   própria.
 
-Veja [ARCHITECTURE.md](ARCHITECTURE.md) para o diagrama completo e o fluxo
-de dados entre cada peça.
+Veja [ARCHITECTURE.md](ARCHITECTURE.md) para o fluxo de dados completo
+entre cada peça.
