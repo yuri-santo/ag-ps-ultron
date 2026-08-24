@@ -12,8 +12,12 @@
 ┌──────────────────────┐    HTTP/8090   ┌───────────────────────────────────────────┐
 │  Celular velho fixo    │◀──────────────▶│              VPS (Linux, Docker)            │
 │  panel/ (Yuri Deck)    │   (LAN, via     │                                             │
-│  no notebook Windows   │   SSH p/ ações) │  ┌───────────────────────────────────────┐  │
-└──────────────────────┘                 │  │  Hermes Agent (gateway de mensageria)  │  │
+│  no notebook Windows   │───┐SSH p/ações)│  ┌───────────────────────────────────────┐  │
+└──────────────────────┘   │              │  │  Hermes Agent (gateway de mensageria)  │  │
+                            ▼              │  │  - recebe Telegram/e-mail              │  │
+                  ┌──────────────────┐     │  │  - roda como serviço Docker            │  │
+                  │  WSL (Kali Linux) │     │  │  - fala com o modelo via 9Router        │  │
+                  │  nmap + arp+avahi │     └──┴───────────────┬───────────────────────┘  │
                                           │  │  - recebe Telegram/e-mail              │  │
                                           │  │  - roda como serviço Docker            │  │
                                           │  │  - fala com o modelo via 9Router        │  │
@@ -123,6 +127,89 @@ Scripts Python na VPS que consultam calendários via Microsoft Graph
 É esse JSON que `panel/server.py` repassa para o card de reuniões do
 painel físico (rota `/calendar`) — o painel não fala com o Outlook nem com
 o Google diretamente, só consome o resultado já processado da VPS.
+
+### Controle de rede local e detecção de invasão (WSL Kali)
+
+Roda dentro de uma distro Linux no WSL (o autor usa Kali), chamada a
+partir do `panel/server.py`. Hoje cobre **controle/descoberta de rede sob
+demanda** — a base necessária para detecção de invasão, mas ainda não a
+detecção contínua em si:
+
+- **`nmap -sn`** — varredura ativa de host discovery na sub-rede local.
+- **`arp -a`** (do próprio Windows) — tabela ARP, complementa o nmap com
+  MAC address de cada host.
+- **tabela OUI do nmap** — resolve fabricante a partir do MAC.
+- **`avahi-browse`** — nomes mDNS (`.local`) de dispositivos que anunciam
+  serviços (AirPlay, Chromecast, HomeKit, SMB, etc.).
+
+Isso já dá controle de rede completo *sob demanda*: apertar "Rede" no
+painel mostra todo dispositivo ativo na LAN, com IP, MAC, fabricante e
+nome. Para virar detecção de invasão de verdade falta rodar essa
+varredura *continuamente* e **alertar sozinho** quando aparece um
+dispositivo novo — isso ainda não existe, é só sob demanda.
+
+**Limitação técnica a considerar antes de implementar um IDS passivo**
+(Suricata/Snort/arpwatch clássico, que ficam "ouvindo" todo o tráfego da
+LAN): o WSL2, por padrão, usa rede **NAT virtualizada** — a distro Linux
+não enxerga o broadcast/ARP de outros hosts como se estivesse
+fisicamente no mesmo segmento, só o próprio tráfego de ida/volta pelo NAT
+do host Windows. Por isso `nmap -sn` (varredura **ativa**) funciona, mas
+uma ferramenta de captura **passiva** não veria o tráfego alheio de forma
+confiável nessa configuração padrão. Duas saídas: (a) o modo de rede
+"mirrored" do WSL2 (versões mais novas do Windows), que aproxima a distro
+da pilha de rede real do host — validar se a captura passiva funciona
+nele; ou (b) aceitar a abordagem ativa e detectar por **diferença entre
+varreduras periódicas**, que já funciona com a arquitetura atual.
+
+**Design proposto (ainda não implementado) para detecção de invasão
+real:**
+
+1. Um script roda a mesma lógica de `scan_network()` periodicamente (ex:
+   a cada 10 min), via Tarefa Agendada própria (mesmo padrão da
+   `YuriStreamDeck`: `pythonw.exe`, sem console, restart automático).
+2. Persiste a lista de dispositivos conhecidos (IP + MAC) num arquivo
+   local (`known_devices.json`).
+3. A cada rodada, compara com a lista conhecida: MAC nunca visto →
+   alerta de "dispositivo desconhecido na rede"; MAC conhecido com
+   fabricante diferente do esperado → alerta (spoofing grosseiro).
+4. O alerta usa o canal já existente — `hermes send --to telegram` via
+   SSH — sem precisar construir notificação nova.
+5. Dispositivo novo legítimo exige aprovação manual (adicionar à lista
+   conhecida) pelo painel físico ou por comando ao agente no Telegram.
+
+Isso entrega o valor real de "detecção de invasão" numa rede doméstica
+(dispositivo estranho conectado = alerta), sem o custo de manutenção de
+assinaturas de IDS de nível corporativo.
+
+**Raptor — a ferramenta de segurança que já existe no mesmo Kali**: o
+autor já mantém, na mesma distro WSL, um framework próprio de testes de
+segurança chamado **Raptor** (`/opt/raptor`), com CLI unificada
+(`raptor.py <modo>`). Não é um IDS de rede (não fica ouvindo a LAN) — é
+um **testador de segurança de código/binário/aplicação web**, com os
+modos:
+
+| Modo      | O que faz |
+|-----------|-----------|
+| `scan`    | Análise estática de código (Semgrep) |
+| `sca`     | Software Composition Analysis — dependências, advisories, SBOM |
+| `binary`  | Investigação black-box de binários |
+| `fuzz`    | Fuzzing de binários (AFL++) |
+| `web`     | Teste de segurança de aplicação web |
+| `codeql`  | Análise só com CodeQL |
+| `agentic` | Workflow autônomo completo (Semgrep + CodeQL + análise por LLM) |
+| `analyze` | Análise de vulnerabilidade via LLM a partir de um SARIF já gerado |
+| `describe`/`doctor` | Inspeção pré-execução / status do setup local |
+| `frida`   | Instrumentação dinâmica (alpha) |
+
+O papel real do Raptor nesta arquitetura é **complementar, não
+substituir**, a detecção de invasão de rede: enquanto o nmap+arp+avahi
+descobrem *dispositivos* na LAN, o Raptor pode rodar `web`/`scan`/`sca`
+periodicamente contra as próprias superfícies expostas do sistema — o
+`panel/server.py` (porta 8090, sem autenticação), o 9Router, ou qualquer
+app publicado — para pegar vulnerabilidades de aplicação antes que virem
+um vetor de invasão de fato. Isso fecha as duas pontas: **quem está na
+minha rede** (nmap/arp) e **o que, nas minhas próprias aplicações, pode
+ser explorado** (Raptor).
 
 ### Painel físico (`panel/`)
 
