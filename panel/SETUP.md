@@ -63,6 +63,79 @@ botões disparam as ações esperadas e que `/health` responde `{"ok": true}`.
 Se não conectar, confira o Firewall do Windows: pode ser necessário liberar
 a porta 8090 para redes privadas (nunca para redes públicas/internet).
 
+## Preparando o celular físico (requisitos, modo quiosque e ideias)
+
+O "celular velho" não é só uma tela — dá pra montar um dispositivo
+dedicado de verdade. O que ele precisa ter, e o que vale a pena.
+
+### Requisitos mínimos
+
+- **Android/iOS com navegador atualizado** (Chrome/Safari) — é só uma
+  PWA, não precisa de app nativo nem loja de aplicativo.
+- **Wi-Fi fixo configurado** para a rede de casa, com "esquecer redes
+  automaticamente" desligado (senão ele some da rede sozinho).
+- **Carregador permanente** — o celular fica ligado na tomada o tempo
+  todo; use um carregador de qualidade (evita degradar a bateria rápido
+  com carga 100% constante — alguns Android têm "limite de carga" nas
+  configurações de bateria, vale ativar se existir).
+- **Tela sempre ligada**: em "Configurações > Tela > Tempo limite",
+  coloque o máximo, e/ou use a opção de desenvolvedor "manter ligado
+  durante carregamento" — o `panel.html` já pede `navigator.wakeLock`
+  via JS, mas ter o SO configurado como reforço evita a tela apagar em
+  navegadores que ignoram o wake lock em segundo plano.
+- **Desabilitar otimização de bateria para o navegador** — Android mata
+  processos em segundo plano agressivamente; sem isso, o painel pode
+  "dormir" e parar de atualizar status/agenda.
+
+### Modo quiosque (travar o celular só no painel)
+
+Sem isso, qualquer toque acidental sai do painel e cai na home do
+Android. Duas opções:
+
+- **App Pinning nativo do Android** (Configurações > Segurança > Fixar
+  app): abre o Chrome no painel, ativa o pin — o botão "voltar"/"home"
+  fica bloqueado até destravar com PIN. Grátis, já vem no sistema, sem
+  instalar nada.
+- **Fully Kiosk Browser** (app dedicado, mais robusto): trava em tela
+  cheia, recarrega sozinho se a página cair, pode auto-iniciar no boot
+  do celular sem precisar desbloquear a tela, e tem um modo "screensaver"
+  que nunca deixa a tela apagar de verdade. Vale o investimento se o
+  celular for ficar de vez montado num suporte de parede/mesa.
+
+### Ideias do que mais vale a pena ter nesse celular
+
+Como esse mesmo celular já roda um **userland Linux completo por dentro**
+(via WireGuard, ver [NETWORK.md](../NETWORK.md#3-o-celular-do-painel-também-é-um-nó-linux-completo)),
+ele não precisa ser só uma tela passiva — dá pra aproveitar o hardware:
+
+- **Suporte de parede/mesa** — vira um "painel de controle" físico de
+  verdade, tipo um termostato inteligente.
+- **App de câmera IP** (ex: apontando pro cômodo onde fica) — reaproveita
+  a câmera do celular como mais um ponto de monitoramento doméstico,
+  complementar ao scanner de rede.
+- **Automação por NFC** — colar uma tag NFC perto do suporte para
+  disparar uma rotina (ex: "modo cinema": TV liga, luzes apagam) tocando
+  o celular nela, sem precisar nem abrir o painel.
+- **Node auxiliar de automação** — já que o userland Linux dele está na
+  mesma malha WireGuard da VPS, pequenos scripts/cron *locais* (ex: ler
+  um sensor conectado via USB-OTG, rodar um teste de latência da própria
+  rede de casa "de dentro") podem rodar direto nele, sem depender da VPS
+  estar de pé.
+- **Segundo canal de notificação** — como ele já está sempre ligado e na
+  tela, uma notificação push simples (ou até só o toast do próprio
+  painel) pode servir de alerta visual imediato (reunião em breve,
+  dispositivo novo na rede) sem depender do celular principal do usuário
+  estar por perto.
+
+### No que ele efetivamente ajuda, resumindo
+
+Mais do que "um monte de botões", esse celular fixo é: **um ponto de
+controle físico instantâneo** (mais rápido que abrir um app no celular
+principal), **um segundo canal de notificação sempre visível**, e **um nó
+de rede próprio** (por causa do userland Linux) que o agente pode usar
+para automações que precisam rodar fisicamente dentro de casa — não só
+uma tela bonita para os botões.
+
 ## 5. Autostart resiliente (o passo que mais importa)
 
 Rodar `python server.py` manualmente não sobrevive a um reboot nem a um
