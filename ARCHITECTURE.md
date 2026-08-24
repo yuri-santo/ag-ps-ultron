@@ -1,186 +1,185 @@
-# Arquitetura
+# Arquitetura completa — Ag-PS-Ultron
 
 ## Visão geral
 
 ```
-+----------------------+        HTTP (LAN, porta 8090)        +---------------------------+
-|  Celular / navegador  | ------------------------------------> |  server.py (Windows)      |
-|  panel.html (PWA)     | <------------------------------------ |  http.server + threads    |
-+----------------------+         JSON / text/html               +-------------+-------------+
-                                                                              |
-                    +---------------------------+---------------------------+---------------------------+
-                    |                           |                           |                           |
-                    v                           v                           v                           v
-          subprocess/start              WSL (Kali Linux)             SSH (minha-vps)              Outlook COM
-       (apps, mstsc, SendKeys)      nmap + arp + avahi (mDNS)   agente-cli / docker ps / curl   (PowerShell + COM)
+                          ┌─────────────────────────┐
+                          │   Celular (qualquer um)   │
+                          │        Telegram           │
+                          └────────────┬─────────────┘
+                                       │ mensagem
+                                       ▼
+┌──────────────────────┐    HTTP/8090   ┌───────────────────────────────────────────┐
+│  Celular velho fixo    │◀──────────────▶│              VPS (Linux, Docker)            │
+│  panel/ (Yuri Deck)    │   (LAN, via     │                                             │
+│  no notebook Windows   │   SSH p/ ações) │  ┌───────────────────────────────────────┐  │
+└──────────────────────┘                 │  │  Hermes Agent (gateway de mensageria)  │  │
+                                          │  │  - recebe Telegram/e-mail              │  │
+                                          │  │  - roda como serviço Docker            │  │
+                                          │  │  - fala com o modelo via 9Router        │  │
+                                          │  └───────────────┬───────────────────────┘  │
+                                          │                  │ chama                     │
+                                          │                  ▼                           │
+                                          │  ┌───────────────────────────────────────┐  │
+                                          │  │  9Router (gateway de IA próprio)       │  │
+                                          │  │  API compatível c/ OpenAI               │  │
+                                          │  │  roteia p/ Gemini/Claude/GPT-OSS/       │  │
+                                          │  │  OpenRouter conforme o modelo pedido    │  │
+                                          │  └───────────────────────────────────────┘  │
+                                          │                                             │
+                                          │  ┌───────────────────────────────────────┐  │
+                                          │  │  Ferramentas próprias (/sap, /tools)    │  │
+                                          │  │  - lg-control.mjs  (TV/rede LAN)        │  │
+                                          │  │  - fetch-note.mjs  (notas SAP, login    │  │
+                                          │  │    de navegador persistido)             │  │
+                                          │  │  - cal_daily2.py + MS Graph/Google       │  │
+                                          │  │    (agenda do dia)                      │  │
+                                          │  └───────────────────────────────────────┘  │
+                                          └───────────────────────────────────────────┘
 ```
 
-O sistema inteiro roda em **três camadas**:
+O sistema tem **dois pontos de entrada** para o mesmo agente:
 
-1. **Cliente (panel.html)** — uma PWA de página única. Não tem lógica de
-   negócio: cada botão só faz `fetch()` para o servidor e mostra o
-   resultado. Isso mantém o cliente trivial de rodar em qualquer navegador
-   moderno (Android, iOS, desktop) sem build step.
-2. **Servidor (server.py)** — um `ThreadingHTTPServer` da biblioteca
-   padrão do Python, sem framework, ouvindo em `0.0.0.0:8090`. Cada request
-   HTTP é tratado numa thread separada, então uma ação lenta (ex: escanear a
-   rede, ~15s) não trava outras requisições (ex: o health-check do
-   indicador de conexão).
-3. **Integrações externas** — o servidor é o único ponto que sabe falar com
-   o resto do mundo: processos locais do Windows, WSL, SSH para a VPS, e o
-   Outlook via COM.
+1. **Telegram** — canal principal, funciona de qualquer celular, em
+   qualquer lugar com internet. É o gateway de mensageria nativo do
+   próprio Hermes (não é um bot separado escrito do zero).
+2. **Painel físico** (`panel/`) — um celular velho dedicado, sempre ligado,
+   rodando a PWA do Yuri Deck. Serve dois papéis: (a) atalhos físicos para
+   ações locais do notebook (abrir apps, RDP, volume), e (b) uma caixa de
+   texto/voz que manda comandos para o mesmo agente via SSH — ou seja, é
+   *outra porta de entrada* para o Hermes, complementar ao Telegram.
 
-## Por que essa arquitetura (e não outra)
+Ambos os caminhos convergem no mesmo agente rodando na VPS — não há duas
+implementações de agente, só duas interfaces de acesso a ele.
 
-- **PWA em vez de app nativo**: zero fricção de instalação (é só abrir a
-  URL e "Adicionar à tela inicial"), atualiza sozinho a cada load, funciona
-  em qualquer celular na mesma rede Wi-Fi.
-- **Servidor Python com stdlib, sem framework**: o painel só faz proxy de
-  ações para o Windows — não há necessidade de roteamento sofisticado,
-  ORM, templates etc. Adicionar uma dependência (Flask/FastAPI) só pra
-  isso seria peso sem benefício real.
-- **O servidor decide o que é permitido**: o cliente nunca manda um comando
-  arbitrário — ele manda uma *chave* (`action: "vscode"`) que é resolvida
-  contra um dicionário fixo (`ACTIONS`) no servidor. Isso é a base do
-  modelo de segurança (ver abaixo).
+## Componentes
 
-## Rotas HTTP (protocolo de comunicação)
+### Hermes Agent
 
-Todo o protocolo é HTTP simples com corpo JSON. Não há autenticação,
-sessão ou HTTPS — o modelo de confiança é "só quem está na minha rede local
-chega nessa porta" (ver seção Segurança).
+Framework de agente de IA com CLI própria, instalado na VPS
+(`/usr/local/lib/hermes-agent`, Python, ambiente virtual próprio). Não é um
+script único — é uma ferramenta com várias responsabilidades:
 
-| Método | Rota            | Corpo (request)                          | Resposta                                    | O que faz |
-|--------|-----------------|-------------------------------------------|----------------------------------------------|-----------|
-| GET    | `/`             | -                                          | `panel.html`                                  | Serve a PWA |
-| GET    | `/manifest.json`| -                                          | `manifest.json`                               | Manifest da PWA |
-| GET    | `/health`       | -                                          | `{"ok": true}`                                | Heartbeat (indicador de status no painel) |
-| POST   | `/action`       | `{"action": "vscode", "payload": null}`   | `{"ok": bool, "cmd"/"error": ...}`            | Executa uma ação da tabela `ACTIONS` |
-| POST   | `/agent`        | `{"text": "..."}`                         | `{"ok": bool, "output": "..."}`               | Envia texto ao agente remoto via SSH |
-| POST   | `/network`      | -                                          | `{"cidr", "hosts": [...], "count"}`           | Escaneia a LAN |
-| POST   | `/agent-status` | -                                          | `{"agent", "ai_gateway", "dockers": [...]}`   | Status da VPS via SSH |
-| POST   | `/calendar`     | `{"day": "YYYY-MM-DD", "window": 1}`      | JSON específico do script de calendário       | Agenda do dia |
+- **`hermes chat`** — sessão interativa de chat com o agente.
+- **`hermes model` / `hermes moa` / `hermes fallback`** — escolha de qual
+  modelo de IA usar, incluindo "Mixture of Agents" (combinar respostas de
+  múltiplos modelos) e provedores de fallback se o principal falhar.
+- **`hermes gateway`** — gerencia o serviço de mensageria (Telegram,
+  e-mail, WhatsApp, Slack, Discord, Signal, SMS, e vários outros — só
+  Telegram e e-mail estão configurados/ativos hoje). Roda como serviço
+  Docker de longa duração ("foreground"), com sessão(ões) ativa(s) e jobs
+  agendados.
+  observação: canal Telegram identificado pelo id de chat "home" —
+  substitua pelo id real do seu chat ao configurar; nunca versione esse id
+  num repositório público.
+- **`hermes secrets`** — integração com cofres de senha externos
+  (Bitwarden, 1Password) em vez de guardar segredos em texto puro no
+  próprio agente.
+- **`hermes egress`** — um firewall de injeção de credenciais ("iron-proxy")
+  para chamadas de saída — a credencial é injetada no proxy, não fica
+  exposta para o processo/modelo que faz a chamada.
+- **`hermes send`** — dispara uma mensagem para uma plataforma configurada
+  a partir de scripts/cron/CI (é o comando usado pelo `panel/server.py`
+  para mandar texto do painel físico para o Telegram do usuário).
+- **`hermes status`** — resumo de tudo: ambiente, modelo ativo, plataformas
+  de mensageria configuradas, status do gateway, sessões e jobs. É esse
+  comando que o `panel/server.py` chama (via SSH) para popular o card
+  "Status VPS" do painel físico.
 
-`Access-Control-Allow-Origin: *` está habilitado em todas as respostas —
-necessário porque o painel pode ser aberto a partir de qualquer IP da LAN
-apontando para o IP do PC, então a origem do fetch nem sempre bate com a do
-servidor.
+### 9Router
 
-## Como cada integração conversa com o mundo externo
+Gateway HTTP próprio, compatível com a API da OpenAI (`/v1/chat/completions`
+etc.), que o Hermes usa como "Custom endpoint" em vez de falar direto com
+um provedor de IA. Roteia por prefixo de modelo:
 
-- **Apps locais / RDP / volume**: `subprocess.Popen(cmd, shell=True, ...)`
-  disparando `start`, `mstsc` ou `powershell -Command "...SendKeys..."`.
-  Rodam com `creationflags=subprocess.CREATE_NO_WINDOW` para não abrir
-  janelas de console visíveis (importante quando o servidor roda via
-  `pythonw.exe`, sem console próprio — sem essa flag, o Windows aloca um
-  console novo e visível para cada processo filho de `shell=True`).
-- **Scanner de rede**: chama `nmap -sn` dentro de uma distro WSL (Kali
-  Linux) para descoberta de hosts, complementa com `arp -a` do próprio
-  Windows para MAC address, resolve fabricante via a tabela OUI do nmap, e
-  nomes `.local` via `avahi-browse` (também no WSL). Tudo em paralelo com
-  `threading.Thread` por host para resolver hostname/mDNS/vendor sem
-  serializar o scan inteiro.
-- **Agente remoto / status da VPS / agenda**: tudo via
-  `ssh -o BatchMode=yes -o ConnectTimeout=8 minha-vps "<comando remoto>"`.
-  `BatchMode=yes` garante que, se a chave SSH não for aceita, falha rápido
-  em vez de pendurar esperando senha. O "agente remoto" é um CLI próprio
-  (não incluso neste repo) que roda na VPS e sabe encaminhar texto para um
-  bot de mensageria, consultar o próprio status, etc.
-- **Agenda (Outlook)**: existem duas abordagens no projeto original —
-  `read_outlook_cal.ps1` lê o Outlook local via COM (`New-Object -ComObject
-  Outlook.Application`), exige o Outlook desktop aberto na mesma máquina;
-  a rota `/calendar` do `server.py`, em produção, na verdade consulta um
-  script equivalente rodando *na VPS* via SSH — assim a agenda funciona de
-  qualquer lugar, sem depender do Outlook estar aberto no PC do painel.
+- `ag/*` — modelos via um provedor tipo "antigravity" (Gemini, Claude,
+  GPT-OSS).
+- `openrouter/*` — modelos via OpenRouter.
 
-## Resiliência: por que o autostart importa (e o que já quebrou)
+Vantagem prática: trocar de modelo (ex: de Gemini para Claude) é só trocar
+a string do modelo configurado no Hermes — não precisa reconfigurar chaves
+de API em cada ferramenta que usa IA.
 
-O servidor precisa ficar no ar o tempo todo, sem intervenção manual, porque
-o painel é acessado do celular a qualquer hora. A solução é uma **Tarefa
-Agendada do Windows**, não um serviço do Windows tradicional — porque as
-ações (abrir apps visíveis, `SendKeys`, RDP) precisam rodar dentro de uma
-sessão interativa de usuário, o que um Windows Service não tem por padrão.
+### Ferramentas SAP e de rede (`/sap`)
 
-Configuração da tarefa (`YuriStreamDeck`):
-- **Gatilho**: `LogonTrigger` — inicia quando o usuário faz login.
-- **Principal**: `InteractiveToken` — roda como o usuário logado, com
-  acesso à área de trabalho.
-- **Restart automático**: até 999 tentativas, a cada 1 minuto, se o
-  processo cair.
-- **Ação**: `pythonw.exe "server.py"` — **não** `python.exe`.
+Um pequeno projeto Node.js na VPS com duas ferramentas concretas:
 
-O motivo do `pythonw.exe` (interpretador sem console) em vez de `python.exe`
-é um problema real que já ocorreu: rodando com `python.exe`, o processo é um
-app de console; quando a sessão sofre qualquer "close event" (janela de
-console fechada, hibernação, reconexão de RDP), o Windows mata o processo
-com `STATUS_CONTROL_C_EXIT` — e isso acontecia *antes* do mecanismo de
-restart conseguir agir de forma confiável, deixando a tarefa parada até o
-próximo login. Trocar para `pythonw.exe` (que não tem console para receber
-esse evento) resolveu. Ver [SETUP.md](SETUP.md) para o passo a passo exato
-de configuração dessa tarefa.
+- **`lg-control.mjs`** — controla TVs LG na rede local (liga/desliga,
+  comandos) — é a peça de "network (WoL/scan/TVs)" mencionada como
+  capacidade do agente.
+- **`fetch-note.mjs`** — busca notas técnicas do SAP. Guarda o estado da
+  sessão do navegador (cookies/login) num arquivo separado após a primeira
+  autenticação manual, para não precisar logar de novo a cada consulta —
+  **este já é, na prática, o padrão de "automação de navegador com área de
+  login persistida"** que se cogitou como expansão do painel: abrir uma
+  sessão autenticada uma vez, reusar o estado salvo nas execuções
+  seguintes. O arquivo de estado de sessão nunca deve ir para controle de
+  versão (contém cookies de login reais).
+
+### Agenda (`/tools`)
+
+Scripts Python na VPS que consultam calendários via Microsoft Graph
+(WorkMail/Exchange) e Google Calendar, normalizando o resultado em JSON.
+É esse JSON que `panel/server.py` repassa para o card de reuniões do
+painel físico (rota `/calendar`) — o painel não fala com o Outlook nem com
+o Google diretamente, só consome o resultado já processado da VPS.
+
+### Painel físico (`panel/`)
+
+Documentado em detalhe em [panel/ARCHITECTURE.md](panel/ARCHITECTURE.md).
+Resumo: um celular velho fixo, rodando a PWA, conversando com um servidor
+Python no notebook Windows, que por sua vez aciona ações locais (apps,
+RDP, volume) e — para tudo que envolve o agente, a agenda e o status da
+VPS — abre uma conexão SSH até a VPS e chama os comandos acima.
 
 ## Segurança
 
-Este projeto assume um **modelo de confiança de rede local**: qualquer
-dispositivo que alcançar a porta 8090 do PC pode disparar qualquer ação da
-tabela `ACTIONS`, ler a agenda, escanear a rede e mandar comandos para o
-agente remoto. Não há autenticação, autorização por usuário, nem HTTPS.
-Isso é uma escolha deliberada de simplicidade para uso pessoal numa rede
-doméstica confiável — **não é adequado para expor na internet** como está.
+Herda o modelo de confiança do `panel/` (rede local, sem autenticação —
+ver [panel/ARCHITECTURE.md](panel/ARCHITECTURE.md)), mais os seguintes
+pontos específicos do agente:
 
-Pontos de atenção se você for construir o seu:
-
-- **Nunca abra a porta 8090 no roteador/firewall para a internet.** Se
-  precisar acessar de fora de casa, use uma VPN (WireGuard/Tailscale) até a
-  sua rede local, nunca port-forward direto.
-- **O dicionário `ACTIONS` é a única superfície de comando aceita** — o
-  cliente nunca manda um comando de shell livre, só uma chave que já existe
-  no servidor. Ao adicionar novas ações, evite interpolar `payload` do
-  cliente direto em uma string de shell (`shell=True`); se precisar aceitar
-  parâmetros do cliente, valide/sanitize antes (como já é feito em
-  `set_volume`, que faz `clamp` e `int()` no valor recebido). Comandos que
-  já usam `shell=True` com argumentos fixos (sem input do cliente) são
-  seguros por não interpolarem dado externo, mas qualquer ação nova que
-  aceite `payload` deve seguir o mesmo cuidado.
-- **A chave SSH para a VPS deve ter passphrase vazia só se o agente SSH
-  estiver protegido pelo login do Windows** — como o comando roda
-  automaticamente e sem interação (`BatchMode=yes`), não há como digitar
-  senha; a segurança dessa conexão depende inteiramente de quem tem acesso
-  físico/remoto à sessão do Windows já ser confiável.
-- **E-mails, hostnames e IPs reais nunca devem ir para um repositório
-  público** — é exatamente o que foi sanitizado neste repo (troque os
-  placeholders pelos seus valores reais só localmente, fora do controle de
-  versão, ou num `.env`/`config.json` no `.gitignore`).
+- **Segredos ficam na VPS, não no notebook**: chaves de modelo, tokens de
+  mensageria e credenciais de sites ficam configurados dentro do Hermes
+  (idealmente via `hermes secrets`, apontando para Bitwarden/1Password) —
+  o notebook só precisa da chave SSH para acionar comandos, nunca guarda
+  as credenciais em si.
+- **`hermes egress`** existe exatamente para isso: nenhuma ferramenta que
+  o agente chama deveria precisar saber a credencial real — o proxy de
+  saída injeta ela na hora da chamada.
+- **Estados de sessão de navegador (`sap-storage-state.json` e
+  equivalentes) são segredos** tão sensíveis quanto uma senha — permitem
+  logar como o usuário sem precisar da senha. Nunca devem ir para
+  controle de versão, backup público, ou ser copiados para fora da VPS
+  sem necessidade.
+- **O id do chat do Telegram e qualquer token de bot** não devem aparecer
+  em texto puro em nenhum repositório, nem privado — trate como você
+  trataria uma senha.
+- **Superfície de comandos do agente**: como o Hermes tem `chat` e
+  `tool-calling`, o agente pode, em tese, executar ações amplas (é um
+  agente com ferramentas, não um bot de respostas fixas) — vale revisar
+  periodicamente quais ferramentas/skills estão habilitadas para ele
+  (`--toolsets`, `--skills`) e não habilitar mais do que o necessário para
+  o uso real.
 
 ## Possíveis expansões
 
-- **Autenticação mínima**: um token fixo (header `Authorization`) validado
-  no `do_POST`, gerado uma vez e colado manualmente no painel — evita que
-  qualquer dispositivo na rede (ex: um convidado no Wi-Fi) dispare ações,
-  sem precisar de um sistema de login completo.
-- **HTTPS local**: certificado autoassinado, para não trafegar em texto
-  puro nem no Wi-Fi de casa.
-- **Confirmação para ações destrutivas**: hoje qualquer ação dispara na
-  hora; ações "perigosas" (ex: desligar o PC, fechar um app) poderiam pedir
-  um segundo toque de confirmação no cliente.
-- **Automação de navegador com login** (pedido explícito de expansão):
-  adicionar uma rota `/browser-task` que aciona um motor de automação
-  (Playwright é o candidato natural — já roda headless, tem gravação de
-  sessão/cookies reutilizável) para logar em sites e repetir tarefas
-  (baixar relatório, preencher formulário, extrair dados para planilha).
-  Isso é tratado como uma feature separada, não incluída neste repo, porque
-  envolve uma decisão importante de segurança: **onde e como as
-  credenciais dos sites ficam guardadas** (cofre de senhas do SO via
-  `keyring`, variável de ambiente, ou um `.env` local nunca commitado).
-- **Geração de relatórios/planilhas**: o "modo reunião" já gera relatório
-  via o agente remoto; o mesmo padrão (transcrever/coletar dado -> mandar
-  prompt estruturado ao agente -> devolver texto) pode virar geração de
-  planilha (`.xlsx` via `openpyxl` no lado do agente, ou no próprio
-  `server.py`) a partir de dados extraídos de automações de navegador.
-- **Múltiplos usuários/painéis**: hoje é um painel pessoal single-user; um
-  arquivo `config.json` por usuário (em vez do dicionário `ACTIONS`
-  hardcoded no código) permitiria reutilizar o mesmo `server.py` para
-  outra pessoa sem editar o Python.
-- **Notificações push**: hoje o painel só *mostra* estado quando aberto;
-  um Service Worker com Push API poderia alertar (ex: reunião em 5 min,
-  container caiu na VPS) mesmo com o app fechado.
+- **Formalizar a automação de navegador como capacidade genérica do
+  agente**: hoje `fetch-note.mjs` é uma automação específica para SAP;
+  generalizar esse padrão (sessão persistida + Playwright) para outros
+  sites com login daria ao agente a capacidade de "fazer ações repetitivas
+  em qualquer site" pedida como expansão — reaproveitando a mesma ideia de
+  estado de sessão salvo, e reportando resultados (relatórios, planilhas)
+  de volta via o mesmo canal (`hermes send`) já usado para Telegram.
+- **Geração de planilhas/relatórios a partir das automações de
+  navegador**: o mesmo agente que já gera relatório de reunião (no
+  `panel/`) poderia gerar `.xlsx` a partir dos dados extraídos de uma
+  automação de navegador, e enviar por Telegram ou salvar num storage
+  compartilhado.
+- **Dashboard unificado de status**: hoje `hermes status` e o status dos
+  containers Docker são consultados via SSH sob demanda pelo painel;
+  poderia virar um endpoint HTTP próprio do Hermes (via `hermes gateway`
+  ou um webhook simples) para não depender de SSH a cada consulta.
+- **Failover de modelo mais visível no painel**: o Hermes já tem
+  `fallback` configurável; expor no card "Status VPS" qual modelo está
+  ativo *no momento* (principal vs. fallback) ajudaria a perceber
+  degradação de serviço mais cedo.
