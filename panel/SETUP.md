@@ -11,6 +11,8 @@
   "agente remoto" e agenda via VPS.
 - Opcional: Outlook desktop, se quiser a variante local de agenda
   (`read_outlook_cal.ps1`).
+- Recomendado: [nircmd](https://www.nirsoft.net/utils/nircmd.html) (ou
+  `choco install nircmd`) para os botões de volume — ver nota no passo 5.
 
 ## 1. Estrutura de pastas
 
@@ -177,6 +179,16 @@ Pontos que fazem diferença real:
   — porque `shell=True` cria um `cmd.exe` novo, e sem console próprio
   herdado (já que o servidor roda via `pythonw.exe`), o Windows aloca uma
   janela nova para cada um.
+- **Volume via `nircmd`, não `SendKeys`** — os botões `vol_up`/`vol_down`/
+  `vol_mute`/`vol_set` chamam `nircmd` quando disponível (`has_nircmd()`
+  faz a checagem uma única vez e cacheia o resultado). Sem `nircmd`, cai
+  no fallback de `SendKeys` via `WScript.Shell` — que só tem efeito com a
+  sessão do Windows **desbloqueada e em foco**. Como a tela trava sozinha
+  por ociosidade (mesmo com sleep desativado, o Windows ainda pode travar
+  a sessão), `SendKeys` se torna um no-op silencioso: o servidor responde
+  `{"ok": true}` porque só confirma que o comando *iniciou*, não que teve
+  efeito real. `nircmd` fala direto com a API de áudio do Windows e
+  funciona com a tela travada.
 
 Para testar o autostart sem reiniciar o PC:
 
@@ -232,3 +244,14 @@ com `Get-ScheduledTaskInfo -TaskName "MeuDeck"` o campo `LastTaskResult`.
 Um valor `3221225786` (`0xC000013A`, `STATUS_CONTROL_C_EXIT`) indica que o
 processo foi morto por um "close event" de console — troque para
 `pythonw.exe` como descrito no passo 5.
+
+**O status fica verde (online), mas os botões de volume não fazem
+nada**: quase sempre é a sessão do Windows travada. `/health` responde
+normalmente porque o processo continua de pé — o problema é específico de
+ações que dependem de `SendKeys`/foco de janela. Instale o `nircmd`
+(`choco install nircmd`) e reinicie o servidor; confirme com
+`where nircmd` que ele está no PATH. Depois disso, `vol_up`/`vol_down`/
+`vol_mute`/`vol_set` passam a funcionar com a tela travada. Ações que
+abrem apps (VS Code, RDP...) continuam funcionando travado mesmo sem
+`nircmd` — só ficam invisíveis atrás da tela de bloqueio até destravar,
+isso é esperado, não é bug.

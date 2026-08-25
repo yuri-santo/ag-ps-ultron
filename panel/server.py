@@ -34,15 +34,47 @@ def launch_store_app(package):
     return run(f"explorer.exe shell:AppsFolder\\{package}!App")
 
 
+_NIRCMD_CACHE = None
+
+
+def has_nircmd():
+    # fixed literal command, no user input involved - not an injection sink
+    global _NIRCMD_CACHE
+    if _NIRCMD_CACHE is None:
+        _NIRCMD_CACHE = os.system("where nircmd >nul 2>&1") == 0
+    return _NIRCMD_CACHE
+
+
 def set_volume(pct):
     pct = max(0, min(100, int(pct)))
-    if os.system("where nircmd >nul 2>&1") == 0:
+    if has_nircmd():
         return run(f'nircmd setsysvolume {int(pct * 655.35)}')
     return run(
         f'powershell -NoProfile -Command '
         f'$w=New-Object -ComObject WScript.Shell; '
         f'$w.SendKeys([string][char]0); '
         f'for($i=0;$i -lt {pct};$i++){{$w.SendKeys([string][char]175)}}'
+    )
+
+
+def volume_step(direction):
+    """direction: +1 sobe, -1 desce. nircmd funciona com a sessão travada; SendKeys não."""
+    if has_nircmd():
+        return run(f'nircmd changesysvolume {6553 * direction}')
+    key = 175 if direction > 0 else 174
+    return run(
+        f'powershell -NoProfile -Command '
+        f'$w=New-Object -ComObject WScript.Shell; '
+        f'for($i=0;$i -lt 10;$i++){{$w.SendKeys([string][char]{key})}}'
+    )
+
+
+def volume_mute():
+    if has_nircmd():
+        return run('nircmd mutesysvolume 2')
+    return run(
+        'powershell -NoProfile -Command '
+        '"$w=New-Object -ComObject WScript.Shell; $w.SendKeys([string][char]173)"'
     )
 
 
@@ -67,9 +99,9 @@ ACTIONS = {
     "obs": lambda: run('"C:\\Program Files\\obs-studio\\bin\\64bit\\obs64.exe"',
                        cwd="C:\\Program Files\\obs-studio\\bin\\64bit"),
     # Volume
-    "vol_up": lambda: run('powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell; for($i=0;$i -lt 10;$i++){$w.SendKeys([string][char]175)}"'),
-    "vol_down": lambda: run('powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell; for($i=0;$i -lt 10;$i++){$w.SendKeys([string][char]174)}"'),
-    "vol_mute": lambda: run('powershell -NoProfile -Command "$w=New-Object -ComObject WScript.Shell; $w.SendKeys([string][char]173)"'),
+    "vol_up": lambda: volume_step(1),
+    "vol_down": lambda: volume_step(-1),
+    "vol_mute": lambda: volume_mute(),
     "vol_set": lambda v=None: set_volume(v if v is not None else 50),
     # Comandos rápidos
     "ping_vps": lambda: run('ping -n 1 SEU.IP.PUBLICO.AQUI'),

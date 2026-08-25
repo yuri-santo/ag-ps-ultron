@@ -221,6 +221,105 @@ gh repo view yuri-santo/ag-ps-ultron --json name,visibility,url
 # -> {"name":"ag-ps-ultron","visibility":"PRIVATE", ...}
 ```
 
+## 8. Painel "online" mas botões de volume sem efeito
+
+Sintoma: bolinha de status do painel fica verde (conectado), mas os
+botões de volume não têm efeito nenhum quando o notebook fica ocioso por
+um tempo. Ações de abrir app continuam parecendo ok.
+
+**Primeira hipótese (descartada): queda de link de rede.** O adaptador
+que o painel usa é um Hyper-V External Switch ligado direto na Ethernet
+física (pra o WSL Kali enxergar a LAN de verdade pro scanner de rede).
+Esse tipo de switch é conhecido por não se recuperar sozinho de uma queda
+momentânea de link.
+
+```powershell
+Get-NetTCPConnection -LocalPort 8090 -ErrorAction SilentlyContinue
+# processo YuriStreamDeck escutando normalmente -> não é o processo caindo
+
+Get-ScheduledTaskInfo -TaskName "YuriStreamDeck"
+# RestartCount 999 / RestartInterval 1min já cobre o processo morrer
+
+Get-VMSwitch | Select-Object Name, SwitchType, NetAdapterInterfaceDescription
+# -> "Externo" (External) ligado no adaptador Ethernet físico, confirma a suspeita
+```
+
+Como hardening preventivo (não é a causa raiz confirmada, mas não faz mal
+manter), criei um watchdog que força o reset da placa se o painel ficar
+inacessível no IP da LAN:
+
+```powershell
+# D:\GIT\streamdeck\watchdog.ps1 — testa http://<ip-da-vEthernet-Externo>:8090
+# e reinicia Ethernet + vEthernet (Externo) se não responder
+
+Register-ScheduledTask -TaskName "YuriStreamDeck-Watchdog" `
+  -Action (New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "D:\GIT\streamdeck\watchdog.ps1"') `
+  -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date) `
+    -RepetitionInterval (New-TimeSpan -Minutes 2) -RepetitionDuration (New-TimeSpan -Days 3650)) `
+  -Principal (New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest) `
+  -Settings (New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 1) -StartWhenAvailable)
+```
+
+**Causa real:** confirmada testando de novo com o usuário depois do
+watchdog não resolver — a bolinha ficava verde e o botão não fazia nada
+mesmo assim. `/health` só testa se o processo/socket estão de pé; não
+testa se a ação de fato teve efeito.
+
+```powershell
+# health check passa normalmente mesmo com a sessão travada
+Invoke-RestMethod http://127.0.0.1:8090/health   # -> {"ok": true}
+
+# mas o volume não muda de verdade -> a causa é a sessão do Windows travada
+quser
+# -> SESSIONNAME console, ID 1, Ativo (mas com tela de bloqueio/screensaver ativo)
+
+Get-ItemProperty "HKCU:\Control Panel\Desktop" -Name ScreenSaveActive
+# -> 1 (protetor de tela / lock ativo, mesmo com sleep desabilitado no plano de energia)
+```
+
+`vol_up`/`vol_down`/`vol_mute` chamavam `SendKeys` via
+`New-Object -ComObject WScript.Shell` **direto**, sem passar pela checagem
+de `nircmd` que só existia em `set_volume()` (usada por `vol_set`).
+`SendKeys` manda teclado virtual pra sessão interativa em foco — com a
+tela travada, não tem janela em foco pra receber a tecla, então o comando
+"funciona" (retorna `{"ok": true}`, porque `run()` só confirma que o
+processo iniciou) mas não tem efeito nenhum.
+
+```powershell
+choco install nircmd -y
+where.exe nircmd
+# -> C:\ProgramData\chocolatey\bin\nircmd.exe
+
+Invoke-RestMethod http://127.0.0.1:8090/action -Method Post -ContentType "application/json" -Body '{"action":"vol_up"}'
+# antes da correção: ainda usava SendKeys mesmo com nircmd instalado
+# ("cmd": "powershell ... SendKeys ...") -> confirma que o bug era no código, não no ambiente
+```
+
+**Correção:** extraída a checagem de `nircmd` para `has_nircmd()`
+(cacheada), e criadas `volume_step(direction)` / `volume_mute()` que
+tentam `nircmd` primeiro e só caem pro `SendKeys` se ele não estiver
+instalado. `vol_up`/`vol_down`/`vol_mute` passaram a chamar essas funções
+em vez do `SendKeys` hardcoded — mesma mudança aplicada em
+[`panel/server.py`](panel/server.py) e no `server.py` real.
+
+```powershell
+Stop-ScheduledTask -TaskName "YuriStreamDeck"
+Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" |
+  Where-Object { $_.CommandLine -match 'streamdeck' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+Start-ScheduledTask -TaskName "YuriStreamDeck"
+
+Invoke-RestMethod http://127.0.0.1:8090/action -Method Post -ContentType "application/json" -Body '{"action":"vol_up"}'
+# -> "cmd": "nircmd changesysvolume 6553"  (confirmado usando nircmd)
+```
+
+**Observação:** ações que abrem apps (`start "..."`, `explorer.exe
+shell:AppsFolder\...`) continuam funcionando com a sessão travada — o
+Windows deixa novos processos iniciarem, só ficam invisíveis atrás da
+tela de bloqueio até destravar. O problema era específico de ações
+baseadas em `SendKeys`, que dependem de foco de janela numa sessão
+interativa desbloqueada.
+
 ## Lições / padrões que valem para o próximo componente
 
 - **Sempre `ls`/`diff` antes de mover pastas** quando existe qualquer
@@ -234,3 +333,9 @@ gh repo view yuri-santo/ag-ps-ultron --json name,visibility,url
 - **`creationflags=subprocess.CREATE_NO_WINDOW`** em toda chamada de
   subprocess que dispara um processo do Windows a partir de um script sem
   console.
+- **Um health check "verde" só prova que o processo está de pé — não que
+  a ação teve efeito.** Qualquer ação que dependa de `SendKeys`/foco de
+  janela silenciosamente não faz nada com a sessão travada, mas ainda
+  retorna `{"ok": true}`. Prefira uma API que não dependa de foco de
+  janela (ex: `nircmd` para volume) sempre que a ação precisar sobreviver
+  a uma sessão travada.
