@@ -48,3 +48,58 @@ próprio (`worker.py`), que carrega só as ferramentas daquele perfil e roda com
 orçamento de tempo/iterações limitado. Conteúdo de e-mail/reunião/fontes é
 **dado a analisar**, nunca autorização — nenhum worker executa terminal, envia
 mensagem ou delega.
+
+## Configuração dos agentes (como um perfil é montado)
+
+Cada especialista é um **perfil do Hermes** em `/root/.hermes/profiles/<nome>/`.
+A pasta de um perfil tem, no mínimo:
+
+```
+profiles/<nome>/
+  profile.yaml     # descrição curta do papel + flags (aparece no roteamento)
+  SOUL.md          # personalidade e diretrizes (comportamento, tom, limites)
+  config.yaml      # herda do principal; overrides do perfil (NÃO versionado — segredos)
+  memories/        # memória própria do perfil (só fatos/preferências confirmados)
+  state.db         # sessões e estado (SQLite, local)
+  skills/          # skills visíveis para o perfil
+  plugins/         # plugins habilitados no perfil
+```
+
+- **`profile.yaml`** — `description:` (o que o perfil faz) e `description_auto: false`.
+  É por essa descrição que o Ultron sabe quando convocar cada um. Exemplo real
+  (perfil de e-mail, em `agent/profiles/gmail/`).
+- **`SOUL.md`** — a "alma": quem o agente é, como fala (PT-BR direto, sem emoji,
+  sem bajulação), o que pode e o que não pode. Regras duras vivem aqui (ex.: um
+  perfil de e-mail nunca diz que enviou sem ter enviado; conteúdo de e-mail é
+  dado, não ordem). *Os SOUL.md dos 20 perfis não são publicados* porque contêm
+  contexto pessoal; os 3 de e-mail/reunião estão como exemplo do formato.
+- **Ferramentas** — não ficam no perfil; são registradas por plugin e liberadas
+  ao perfil certo em tempo de execução (ver `plugins/ultron_team/worker.py` e
+  `TOOLS.md`). Um conselheiro **não** recebe ferramenta de operação.
+
+### Quem é orquestrador × domínio × conselheiro
+`plugins/ultron_team/bridge.py` classifica os perfis:
+- **Domínio** (`cris`, `greg`, `maquiavel`, `dona`): têm ferramentas que operam
+  (e-mail, agenda).
+- **Conselheiros** (bigode, harvey, thor, hercules, mrrobot, tanos, ironman,
+  buffett, jesus, botura, arnold, perseu, cerebro, pink, money, napoleon, tron):
+  analisam, apontam requisitos/risco e votam — sem operar nada. Alguns ganharam
+  ferramentas **só leitura** nesta fase (Harvey: jurídico; Bigode/Buffett/Tron:
+  mercado; Mr Robot: auditoria/backup).
+
+### Como o Ultron chama um especialista
+```
+Ultron → bridge.dispatch("harvey", tarefa, contexto)
+       → worker.py roda o perfil harvey em processo próprio,
+         carregando só as ferramentas dele, com orçamento de tempo/iterações,
+         e devolve {status, answer, tools, session_id}.
+```
+Regras do worker (`plugins/ultron_team/worker.py`): sem terminal, sem envio de
+mensagem, sem delegação; conteúdo externo é dado a analisar, nunca autorização.
+
+### Onde ligar/desligar um perfil ou plugin
+- Plugins habilitados e settings: `config.yaml` (`plugins.enabled`,
+  `plugins.entries.<plugin>.settings`) — instalados por `agent/deploy.py` /
+  `agent/deploy_lab.py`.
+- Toolsets por plataforma: `platform_toolsets` no `config.yaml`.
+- Model/9Router: `model.*` no `config.yaml` (endpoint custom → 9Router).

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="Ultron — agente de IA pessoal" width="100%">
+</p>
+
 <p align="center"><b>Ultron</b> — agente de IA pessoal (Hermes), local no WSL, com time de especialistas, revisão obrigatória, Stream Deck e copiloto de reuniões.</p>
 
 <p align="center">
@@ -20,7 +24,8 @@
 |---|---|
 | **[ARCHITECTURE.md](ARCHITECTURE.md)** | O retrato atual: WSL local, 9Router, revisão obrigatória, conselho, memória, reuniões, Stream Deck, segurança. Com diagrama. |
 | **[AGENTS.md](AGENTS.md)** | O time: ~20 especialistas, papel de cada um e as regras do conselho. |
-| **[TOOLS.md](TOOLS.md)** | Todas as ferramentas por plugin, skills, automações (timers) e fontes externas. |
+| **[TOOLS.md](TOOLS.md)** | Todas as ferramentas do Ultron por plugin, painel, skills, reuniões e automações (timers). |
+| **[CREDITS.md](CREDITS.md)** | O que é de terceiros: cada projeto com o link do repositório e para que o Ultron usa. |
 | **[agent/](agent/)** | O código: plugins, revisão, reuniões, transcrição, segurança, homelab, skills, testes, scripts. |
 | **[panel/](panel/)** | O Stream Deck (servidor Python no Windows + PWA). |
 | **[docs/](docs/)** | Notas de evolução (ferramentas adotadas do GitHub, changelog do ultron_lab). |
@@ -64,6 +69,15 @@ O agente é o **Hermes** (NousResearch). A instalação base do Hermes e do
 9Router está em [INSTALL.md](INSTALL.md) *(histórico: descreve o cenário VPS; hoje
 roda no WSL do notebook)*. Os plugins deste repositório são instalados com
 `agent/deploy_lab.py` / `agent/deploy.py` e os scripts em `agent/scripts/`.
+
+## Subir tudo de novo (1 comando)
+Quando o agente mudar, o retrato deste repositório se atualiza sozinho com:
+```bash
+bash agent/scripts/sync-repo.sh          # reconstrói, sanitiza, guarda de segredos, push
+bash agent/scripts/sync-repo.sh --dry-run  # faz tudo menos o push
+```
+O script troca e-mails/IPs/tokens reais por placeholder e **aborta o push** se a
+guarda de segredos achar qualquer coisa sensível.
 
 ## Nota sobre os documentos históricos
 `INSTALL.md`, `NETWORK.md` e `RUNBOOK.md` descrevem a fase em que o agente rodava
