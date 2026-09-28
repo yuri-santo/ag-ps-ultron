@@ -142,3 +142,29 @@ dedicado futuro (`servidor.env`).
 
 > As bibliotecas e projetos de terceiros usados por essas ferramentas estão em
 > **[CREDITS.md](CREDITS.md)** com link e finalidade.
+
+---
+
+## 8. Plugins do Hermes (visão geral — 13)
+Instalados em `/root/.hermes/plugins/`. Os quatro primeiros são o núcleo do
+Ultron (detalhado acima); os demais são capacidades adicionais.
+
+| Plugin | O que traz |
+|---|---|
+| `ultron_team` | Orquestração: conselho SDD, `bridge`→`worker`, e-mail/agenda dos perfis de domínio. |
+| `ultron_agentes` | Dados reais só-leitura: BCB, BrasilAPI, B3, auditoria e backup. |
+| `harvey_juridico` | Suíte jurídica (Vade Mecum, Planalto, DataJud, DJEN, prazos, jurisprudência, Frank). |
+| `ultron_lab` | Anti-golpe determinístico, homelab, monitor e aquecimento do STT. |
+| `ultron_local` | Ferramentas locais do dono (ponte com o ambiente do PC). |
+| `meeting_copilot` | Copiloto de reunião completo: captura, transcrição, diarização, ATA, tickets, conhecimento. |
+| `hermes_rag` | RAG com base + embeddings (containers `hermes-rag-*`). |
+| `flowsint` | Integração com a plataforma de investigação/OSINT (containers `flowsint-*`). |
+| `nango` | Conectores OAuth (container Nango). |
+| `image_gen` | Geração de imagem (Google Gemini). |
+| `video_gen` | Geração de vídeo (Google Veo). |
+| `claude_harness` | Ponte para rodar via Claude (harness MCP/stdio). |
+| `a_team_workflow` | Registro de colaboração entre os agentes. |
+
+Ver **[INTEGRACOES.md](INTEGRACOES.md)** para o que cada um conversa por fora,
+**[AUTOMACOES.md](AUTOMACOES.md)** para o que roda sozinho e
+**[HOMELAB.md](HOMELAB.md)** para os containers.

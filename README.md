@@ -23,8 +23,13 @@
 | Documento | O que tem |
 |---|---|
 | **[ARCHITECTURE.md](ARCHITECTURE.md)** | O retrato atual: WSL local, 9Router, revisão obrigatória, conselho, memória, reuniões, Stream Deck, segurança. Com diagrama. |
-| **[AGENTS.md](AGENTS.md)** | O time: ~20 especialistas, papel de cada um e as regras do conselho. |
-| **[TOOLS.md](TOOLS.md)** | Todas as ferramentas do Ultron por plugin, painel, skills, reuniões e automações (timers). |
+| **[AGENTS.md](AGENTS.md)** | O time: os **21 especialistas** com nome, personalidade e especialidade + regras do conselho. |
+| **[TOOLS.md](TOOLS.md)** | Ferramentas por plugin + os **13 plugins** do Hermes, painel, skills, reuniões e automações. |
+| **[AUTOMACOES.md](AUTOMACOES.md)** | Tudo que roda sozinho: crons e timers (saúde, finanças, conteúdo, monitores, backup). |
+| **[INTEGRACOES.md](INTEGRACOES.md)** | Tudo com que o agente conversa: M365, Google Fit, NotebookLM, Telegram, TikTok, YouTube, etc. |
+| **[DATABASES.md](DATABASES.md)** | Os bancos: estrutura e finalidade (o **dado pessoal fica privado**). |
+| **[HOMELAB.md](HOMELAB.md)** | Os containers Docker que sustentam o Ultron (9Router, Frank, RAG, ai-memory, flowsint…). |
+| **[DASHBOARD.md](DASHBOARD.md)** | O dashboard do Hermes (todas as abas) e o Stream Deck. |
 | **[CREDITS.md](CREDITS.md)** | O que é de terceiros: cada projeto com o link do repositório e para que o Ultron usa. |
 | **[agent/](agent/)** | O código: plugins, revisão, reuniões, transcrição, segurança, homelab, skills, testes, scripts. |
 | **[panel/](panel/)** | O Stream Deck (servidor Python no Windows + PWA). |

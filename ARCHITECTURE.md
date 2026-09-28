@@ -13,8 +13,14 @@ fala com ele por **Telegram**, por **e-mail**, pelo **HermesDesktop** (app de
 voz no PC) e por um **Stream Deck** (PWA num celular fixo na LAN). Ele escolhe o
 modelo por um **gateway próprio (9Router)**, consulta uma **memória** persistente,
 e **toda resposta passa por uma revisão obrigatória** antes de sair. Um time de
-~20 **especialistas** (perfis) é convocado por um **conselho** para pesquisa e
+**21 especialistas** (perfis) é convocado por um **conselho** para pesquisa e
 decisão, com um verificador de fatos (**Frank**) para as alegações que importam.
+
+> **Retrato completo por tema:** [AGENTS.md](AGENTS.md) (os 21 agentes) ·
+> [TOOLS.md](TOOLS.md) (13 plugins e ferramentas) · [AUTOMACOES.md](AUTOMACOES.md)
+> (o que roda sozinho) · [INTEGRACOES.md](INTEGRACOES.md) (tudo com que conversa) ·
+> [DATABASES.md](DATABASES.md) (bancos) · [HOMELAB.md](HOMELAB.md) (containers) ·
+> [DASHBOARD.md](DASHBOARD.md) (painéis).
 
 ```
    Telefone (Telegram)      HermesDesktop (voz, PC)      Stream Deck (celular LAN)
