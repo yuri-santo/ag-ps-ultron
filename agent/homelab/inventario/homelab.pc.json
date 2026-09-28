@@ -1,0 +1,73 @@
+{
+  "_comentario": "Inventário do cenário PC (Hermes e Docker no mesmo WSL Debian). O monitor do ultron_lab checa estes serviços a cada 10 min e avisa no Telegram quando algum cai (2 checagens seguidas) ou volta. \"esperado\": \"qualquer\" = serviço sem rota de saúde; qualquer resposta abaixo de 500 conta como no ar. Cabeçalhos secretos: \"headers_env\": {\"Header\": \"NOME_DA_VARIAVEL\"}.",
+  "servicos": [
+    {
+      "nome": "hermes-dashboard",
+      "grupo": "hermes",
+      "url": "http://127.0.0.1:9119/",
+      "descricao": "Painel do Hermes (usado pelo Hermes Desktop)",
+      "critico": true
+    },
+    {
+      "nome": "9router",
+      "grupo": "hermes",
+      "url": "http://127.0.0.1:20130/",
+      "descricao": "Roteador de modelos do Ultron",
+      "esperado": "qualquer",
+      "critico": true
+    },
+    {
+      "nome": "ai-memory",
+      "grupo": "ia",
+      "url": "http://127.0.0.1:49374/healthz",
+      "descricao": "Memória compartilhada dos agentes (MCP)",
+      "critico": true
+    },
+    {
+      "nome": "hermes-rag",
+      "grupo": "ia",
+      "url": "http://127.0.0.1:8181/",
+      "descricao": "API de RAG do Hermes",
+      "esperado": "qualquer"
+    },
+    {
+      "nome": "syncthing",
+      "grupo": "arquivos",
+      "url": "http://127.0.0.1:7104/rest/noauth/health",
+      "descricao": "Sincronização de arquivos"
+    },
+    {
+      "nome": "home-assistant",
+      "grupo": "casa",
+      "url": "http://127.0.0.1:8123/",
+      "descricao": "Home Assistant"
+    },
+    {
+      "nome": "nango",
+      "grupo": "integracoes",
+      "url": "http://127.0.0.1:3003/",
+      "descricao": "Nango (conexões OAuth)",
+      "esperado": "qualquer"
+    },
+    {
+      "nome": "flowsint-api",
+      "grupo": "integracoes",
+      "url": "http://127.0.0.1:5001/",
+      "descricao": "Flowsint API",
+      "esperado": "qualquer"
+    },
+    {
+      "nome": "librechat",
+      "grupo": "apps",
+      "url": "http://127.0.0.1:3080/",
+      "descricao": "LibreChat"
+    },
+    {
+      "nome": "lm-studio",
+      "grupo": "apps",
+      "url": "http://127.0.0.1:1234/v1/models",
+      "descricao": "LM Studio no Windows (só responde aberto; não gera alerta)",
+      "alertar": false
+    }
+  ]
+}

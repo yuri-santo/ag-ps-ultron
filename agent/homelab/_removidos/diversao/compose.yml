@@ -1,0 +1,21 @@
+# diversao: apps leves do Akita que rodam em container.
+# (frank_go, Frank Karaokê, Frank Manga+ são apps de desktop/celular: veja o README.)
+name: hl-diversao
+
+services:
+  frank-type:
+    # akitaonrails/frank_type: treino de digitação com prosa de domínio público; histórico fica no navegador.
+    image: akitaonrails/frank_type:latest
+    container_name: frank-type
+    restart: unless-stopped
+    ports:
+      - "${BIND:-127.0.0.1}:3200:80"
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${FRANK_TYPE_SECRET:?gere com openssl rand -hex 64 e ponha em FRANK_TYPE_SECRET}
+      - HOST=localhost
+      - FORCE_SSL=false
+      - ASSUME_SSL=false
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

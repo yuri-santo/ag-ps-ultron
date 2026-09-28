@@ -1,0 +1,14 @@
+# Overlay AMD ROCm (servidor Linux com GPU AMD). FramePack e ComfyUI desta pasta são CUDA-only.
+# APUs recentes (ex.: Ryzen AI Max) podem precisar de HSA_OVERRIDE_GFX_VERSION, como o Akita usa.
+services:
+  ollama:
+    image: ollama/ollama:rocm
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - render
+    environment:
+      - OLLAMA_KEEP_ALIVE=10m
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-}

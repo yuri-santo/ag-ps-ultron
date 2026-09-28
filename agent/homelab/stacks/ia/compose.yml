@@ -1,0 +1,84 @@
+# ia: memória compartilhada dos agentes, LLM local e geração (vídeo/imagem).
+# GPU entra por overlay: compose.nvidia.yml ou compose.rocm.yml (homelab.sh escolhe pelo GPU= do .env).
+name: hl-ia
+
+services:
+  ai-memory:
+    # akitaonrails/ai-memory: wiki markdown versionada em git + índice; MCP em /mcp.
+    image: docker.io/akitaonrails/ai-memory:latest
+    container_name: ai-memory
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${BIND:-127.0.0.1}:49374:49374"
+    volumes:
+      - ${DATA_ROOT}/ia/ai-memory:/data
+    environment:
+      - TZ=${TZ}
+      - AI_MEMORY_AUTH_TOKEN=${AI_MEMORY_AUTH_TOKEN:-}
+      - AI_MEMORY_LLM_PROVIDER=${AI_MEMORY_LLM_PROVIDER:-}
+      - AI_MEMORY_LLM_BASE_URL=${AI_MEMORY_LLM_BASE_URL:-}
+      - AI_MEMORY_LLM_MODEL=${AI_MEMORY_LLM_MODEL:-}
+      - RUST_LOG=ai_memory=info
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/ai-memory", "status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: &logs
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    profiles: [ollama]
+    ports:
+      - "${BIND:-127.0.0.1}:11434:11434"
+    volumes:
+      - ${DATA_ROOT}/ia/ollama:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=10m
+    logging: *logs
+
+  framepack:
+    # akitaonrails/FramePack-Docker-CUDA (build local; só NVIDIA). Primeiro start baixa ~30 GB de modelos.
+    build:
+      context: ${VENDOR_ROOT}/FramePack-Docker-CUDA
+      args:
+        UID: ${PUID:-1000}
+        GID: ${PGID:-1000}
+    image: homelab/framepack:local
+    container_name: framepack
+    restart: "no"
+    profiles: [gerar]
+    ports:
+      - "${BIND:-127.0.0.1}:7860:7860"
+    volumes:
+      - ${DATA_ROOT}/ia/framepack/hf_download:/app/hf_download
+      - ${DATA_ROOT}/ia/framepack/outputs:/app/outputs
+    logging: *logs
+
+  comfyui:
+    # akitaonrails/ComfyUI-Docker-CUDA-preloaded (build local; só NVIDIA).
+    # ANTES do primeiro start, enxugue vendor/.../models.conf: a lista completa baixa ~250 GB.
+    # No PC com Windows, prefira o ComfyUI-Easy-Install nativo (mesma porta 8188).
+    build:
+      context: ${VENDOR_ROOT}/ComfyUI-Docker-CUDA-preloaded
+    image: homelab/comfyui:local
+    container_name: comfyui
+    restart: "no"
+    profiles: [gerar]
+    ports:
+      - "${BIND:-127.0.0.1}:8188:8188"
+    volumes:
+      - ${DATA_ROOT}/ia/comfyui/models:/app/ComfyUI/models
+      - ${DATA_ROOT}/ia/comfyui/custom_nodes:/app/ComfyUI/custom_nodes
+      - ${DATA_ROOT}/ia/comfyui/output:/app/ComfyUI/output
+      - ${DATA_ROOT}/ia/comfyui/input:/app/ComfyUI/input
+      - ${VENDOR_ROOT}/ComfyUI-Docker-CUDA-preloaded/extensions.conf:/app/extensions.conf:ro
+      - ${VENDOR_ROOT}/ComfyUI-Docker-CUDA-preloaded/models.conf:/app/models.conf:ro
+    logging: *logs

@@ -1,0 +1,54 @@
+{
+  "_comentario": "Inventário do cenário servidor dedicado. Troque 192.168.0.50 pelo IP/hostname Tailscale do servidor.",
+  "servicos": [
+    {
+      "nome": "ai-memory",
+      "grupo": "ia",
+      "url": "http://192.168.0.50:49374/healthz",
+      "descricao": "Memória compartilhada dos agentes (MCP)",
+      "critico": true
+    },
+    {
+      "nome": "ollama",
+      "grupo": "ia",
+      "url": "http://192.168.0.50:11434/api/version",
+      "descricao": "LLM local"
+    },
+    {
+      "nome": "framepack",
+      "grupo": "ia",
+      "url": "http://192.168.0.50:7860/",
+      "descricao": "Vídeo a partir de imagem (liga sob demanda)"
+    },
+    {
+      "nome": "comfyui",
+      "grupo": "ia",
+      "url": "http://192.168.0.50:8188/system_stats",
+      "descricao": "Geração de imagem"
+    },
+    {
+      "nome": "syncthing",
+      "grupo": "arquivos",
+      "url": "http://192.168.0.50:7104/rest/noauth/health",
+      "descricao": "Sincronização de arquivos"
+    },
+    {
+      "nome": "jellyfin",
+      "grupo": "midia",
+      "url": "http://192.168.0.50:8096/health",
+      "descricao": "Servidor de mídia"
+    },
+    {
+      "nome": "grafana",
+      "grupo": "monitor",
+      "url": "http://192.168.0.50:7105/api/health",
+      "descricao": "Dashboards"
+    },
+    {
+      "nome": "prometheus",
+      "grupo": "monitor",
+      "url": "http://192.168.0.50:7106/-/healthy",
+      "descricao": "Métricas"
+    }
+  ]
+}

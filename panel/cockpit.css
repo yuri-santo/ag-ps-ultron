@@ -1,0 +1,22 @@
+/* Tactile instruments, with no animation loop or WebGL cost. */
+:root{--metal:#272c34;--muted:#a1a8b8}
+body{background:#0d1118}body::before{background:radial-gradient(ellipse at 12% 0%,#7197bc14,transparent 60%)}
+header{background:linear-gradient(#222832,#151922);box-shadow:0 5px 20px #0006;border-bottom:1px solid #59616e55}
+nav,.classic{display:none!important}.page{min-height:calc(100dvh - 70px)}
+.viewport{height:calc(100dvh - 70px)!important}.toast{bottom:20px}
+.card{border:1px solid #65718436;border-radius:18px;background:linear-gradient(150deg,#292f39,#171c25);box-shadow:inset 0 1px #ffffff10,0 9px 20px #0004}
+.key{position:relative;border-radius:12px!important;border:1px solid #6b768650!important;background:linear-gradient(150deg,#383f4b,#1d232d)!important;box-shadow:inset 0 2px #ffffff19,inset 0 -3px #05080e,0 6px 0 #080c12,0 9px 12px #0006;transition:transform .12s,box-shadow .12s}
+.key:active{transform:translateY(4px);box-shadow:inset 0 1px #ffffff16,inset 0 -1px #05080e,0 2px 0 #080c12}.key.hero{background:linear-gradient(140deg,#a999d0,#776b9e)!important}
+.clock-card{background:linear-gradient(135deg,#202b36,#121820)}.clock{font-family:'Segoe UI',sans-serif;font-variant-numeric:tabular-nums;text-shadow:0 0 22px #a3d5ff20}
+.page-number{color:#c3ccda;letter-spacing:2px}.swipe-indicator{font:10px ui-monospace,monospace;color:#aeb8c7;letter-spacing:2px}
+.toggle-key{padding-top:13px!important;gap:13px!important}.toggle-key::before{content:'';display:block;width:43px;height:24px;border-radius:6px;background:linear-gradient(90deg,#080c12 48%,#4c5562 50%,#a6adb7 62%,#777e87 90%);box-shadow:inset 0 2px 5px #000,0 1px #ffffff25;transform:rotate(-12deg);transition:transform .15s}
+.toggle-key[aria-pressed=true]::before{transform:rotate(12deg);background:linear-gradient(90deg,#f2d098,#a69170 42%,#080c12 46%)}
+.toggle-key[aria-pressed=true]{border-color:#f4c98890!important}.toggle-key[aria-pressed=true] span{color:#ffe0ac}
+.radio-control{display:flex;align-items:center;gap:28px;margin:24px 0}.radio-dial{flex:0 0 118px;width:118px;height:118px;border-radius:50%;position:relative;background:repeating-conic-gradient(#6a7482 0deg 1deg,transparent 1deg 15deg);touch-action:none;cursor:ns-resize;user-select:none}
+.radio-dial::before{content:'';position:absolute;inset:12px;border:2px solid #697383;border-radius:50%;background:radial-gradient(circle at 36% 25%,#4b5565,#181e28 70%);box-shadow:inset 0 3px 8px #ffffff1a,0 7px 12px #000b}
+.dial-pointer{position:absolute;left:calc(50% - 2px);top:22px;width:4px;height:20px;border-radius:3px;background:#f8d391;box-shadow:0 0 9px #f8d39166;transform-origin:2px 37px;transform:rotate(var(--rotation,-135deg))}
+.radio-number{font:42px ui-monospace,monospace;color:#e6c694}.radio-number small{font-size:15px}.radio-hint{font-size:11px;color:#a1a8b8;max-width:180px;line-height:1.5}
+.meeting-records{position:fixed;inset:0;z-index:30;background:#111720f9;overflow:auto;padding:24px}.meeting-records header{position:sticky;top:-24px;padding:12px;height:auto;gap:14px}.meeting-records pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.7 'Segoe UI',sans-serif;max-width:1050px;margin:24px auto;color:#dae0e9}.meeting-records h2{font-size:17px;max-width:1050px;margin:24px auto;color:#edc58e}
+.instrument-status{border-left:2px solid #8cacc5;padding:9px 13px;background:#ffffff04;font:12px/1.7 ui-monospace,monospace;margin:16px 0}.instrument-status[data-state=active]{border-color:#8fddb6}
+@media(max-width:850px){.page{min-height:calc(100dvh - 57px)}.viewport{height:calc(100dvh - 57px)!important}.swipe-indicator{font-size:8px;letter-spacing:1px}.topright{gap:10px}}
+@media(prefers-reduced-motion:reduce){.key,.toggle-key::before{transition:none}}

@@ -1,0 +1,22 @@
+# midia: servidor de mídia para a SUA biblioteca (vídeos, músicas, fotos já seus).
+# Fotos estilo Google Photos: use o compose oficial do Immich (muda a cada release),
+# em ${STACKS_ROOT}/immich, seguindo https://immich.app/docs/install/docker-compose
+name: hl-midia
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${BIND:-127.0.0.1}:8096:8096"
+    volumes:
+      - ${DATA_ROOT}/midia/jellyfin/config:/config
+      - ${DATA_ROOT}/midia/jellyfin/cache:/cache
+      - ${MEDIA_ROOT}:/media:ro
+    environment:
+      - TZ=${TZ}
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

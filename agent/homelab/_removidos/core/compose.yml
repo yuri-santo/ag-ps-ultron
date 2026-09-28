@@ -1,0 +1,43 @@
+# core: painel de status, gestão de containers e túnel de acesso externo.
+# Subir: scripts/homelab.sh up core
+name: hl-core
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "${BIND:-127.0.0.1}:7101:3001"
+    volumes:
+      - ${DATA_ROOT}/core/uptime-kuma:/app/data
+    environment:
+      - TZ=${TZ}
+    logging: &logs
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  portainer:
+    image: portainer/portainer-ce:lts
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "${BIND:-127.0.0.1}:7102:9000"
+    volumes:
+      # Socket do Docker = acesso root ao host. Só exponha via túnel com autenticação.
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DATA_ROOT}/core/portainer:/data
+    logging: *logs
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    profiles: [tunel]
+    # Com o perfil "tunel" ligado, CF_TUNNEL_TOKEN precisa estar no .env.
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN:-}
+    # Hostnames públicos são configurados no painel Zero Trust apontando para
+    # http://host.docker.internal:<porta>; proteja com Cloudflare Access.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging: *logs

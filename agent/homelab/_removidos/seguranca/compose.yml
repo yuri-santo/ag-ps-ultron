@@ -1,0 +1,20 @@
+# seguranca: cofre de senhas compatível com Bitwarden (Vaultwarden), como no post do Akita.
+name: hl-seguranca
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    ports:
+      - "${BIND:-127.0.0.1}:7103:80"
+    volumes:
+      - ${DATA_ROOT}/seguranca/vaultwarden:/data
+    environment:
+      - TZ=${TZ}
+      - DOMAIN=${VAULTWARDEN_DOMAIN}
+      - SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS:-false}
+      - WEBSOCKET_ENABLED=true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

@@ -1,0 +1,4 @@
+name: ultron_lab
+version: 1.0.0
+description: Análise de golpes PT-BR (port do Frank FBI), checagem de e-mail por UID nos perfis de correio e status do homelab.
+author: Yuri

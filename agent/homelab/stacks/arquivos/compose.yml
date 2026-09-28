@@ -1,0 +1,23 @@
+# arquivos: sincronização entre PC, celular e servidor (ex.: o cofre do Obsidian).
+name: hl-arquivos
+
+services:
+  syncthing:
+    image: syncthing/syncthing:latest
+    container_name: syncthing
+    restart: unless-stopped
+    hostname: homelab-syncthing
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ}
+    ports:
+      - "${BIND:-127.0.0.1}:7104:8384"   # interface web
+      - "22000:22000/tcp"                # sincronização
+      - "22000:22000/udp"
+      - "21027:21027/udp"                # descoberta local
+    volumes:
+      - ${DATA_ROOT}/arquivos/syncthing:/var/syncthing
+    logging: &logs
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

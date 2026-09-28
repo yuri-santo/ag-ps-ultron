@@ -1,0 +1,20 @@
+# Overlay NVIDIA: aplicado quando GPU=nvidia no .env.
+# WSL: driver NVIDIA do Windows + nvidia-container-toolkit no Debian
+#   (nvidia-ctk runtime configure --runtime=docker && service docker restart).
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+  ollama: *gpu
+  framepack: *gpu
+  comfyui:
+    <<: *gpu
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
