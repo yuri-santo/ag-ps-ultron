@@ -1,0 +1,663 @@
+/* Mapa financeiro: profundidade por parallax + relevo neumorfico.
+   Parallax segue a licao do video: cada camada anda numa velocidade diferente,
+   e a diferenca de velocidade e o que o olho le como distancia. */
+
+.mapa-pagina {
+  --neu-base: #232838;
+  --neu-alto: #2b3143;
+  --neu-luz: #333a4f;
+  --neu-sombra: #171b26;
+  --neu-texto: #e7ebf5;
+  --neu-fraco: #97a1b8;
+  --tom-bom: #6fd2a8;
+  --tom-ruim: #e08296;
+  --tom-alerta: #e8bd7a;
+  --tom-trilha: #8fd0e8;
+  --tom-curva: #d9b06a;
+
+  position: relative;
+  isolation: isolate;
+  padding: 8px 0 40px;
+  color: var(--neu-texto);
+  /* O palco do mapa e mais largo que a tela. Sem isto ele empurrava a pagina
+     inteira para o lado em vez de rolar dentro da propria caixa. */
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.mapa-container { min-width: 0; max-width: 100%; overflow-x: clip; }
+
+/* ---------- camadas de fundo (parallax) ---------------------------------
+   --px / --py sao escritos pelo mapa-parallax.js. --sp e a velocidade da
+   camada: quanto maior, mais perto do observador ela parece estar. */
+.mapa-fundo {
+  position: fixed;
+  inset: -20vh -20vw;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mapa-fundo .camada {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(
+    calc(var(--px, 0px) * var(--sp) * -1),
+    calc(var(--py, 0px) * var(--sp) * -1),
+    0
+  );
+  will-change: transform;
+}
+
+.camada-1 {
+  --sp: 0.12;
+  background:
+    radial-gradient(ellipse 70% 50% at 18% 8%, #4d5b8433, transparent 60%),
+    radial-gradient(ellipse 60% 45% at 84% 22%, #6b5a8030, transparent 62%),
+    linear-gradient(180deg, #1b1f2c, #171b26);
+}
+
+.camada-2 {
+  --sp: 0.34;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(#ffffff0a 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff0a 1px, transparent 1px);
+  background-size: 92px 92px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 25%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 25%, transparent 78%);
+}
+
+.camada-3 {
+  --sp: 0.62;
+  opacity: 0.55;
+  background:
+    radial-gradient(1.6px 1.6px at 12% 24%, #b9c9e6, transparent 52%),
+    radial-gradient(1.4px 1.4px at 38% 62%, #9fb6da, transparent 52%),
+    radial-gradient(1.8px 1.8px at 66% 18%, #cbd8f0, transparent 52%),
+    radial-gradient(1.3px 1.3px at 82% 70%, #a5bade, transparent 52%),
+    radial-gradient(1.5px 1.5px at 27% 84%, #b0c4e4, transparent 52%),
+    radial-gradient(1.2px 1.2px at 55% 44%, #c2d2ee, transparent 52%);
+}
+
+/* ---------- cabecalho e controles ---------------------------------------- */
+.mapa-hero {
+  padding: 22px 4px 26px;
+  display: flex; flex-wrap: wrap; gap: 18px 26px;
+  align-items: flex-end; justify-content: space-between;
+}
+.mapa-hero > div:first-child { max-width: 620px; }
+
+.exec-controles { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.exec-mes { min-width: 148px; }
+.exec-mes .Select-control, .exec-mes [class*="control"] {
+  background: #232838 !important; border: 1px solid #ffffff14 !important;
+  border-radius: 12px !important;
+  box-shadow: inset 4px 4px 10px #171b26, inset -4px -4px 10px #333a4f !important;
+}
+.exec-escala { display: flex; gap: 6px; padding: 4px; border-radius: 13px;
+               background: #232838;
+               box-shadow: inset 4px 4px 10px #171b26, inset -4px -4px 10px #333a4f; }
+.exec-escala .form-check { margin: 0; padding: 0; }
+.exec-escala .form-check-input { display: none; }
+.exec-escala .form-check-label {
+  display: block; cursor: pointer; padding: 8px 20px; border-radius: 10px;
+  font-size: 12.5px; color: #97a1b8; transition: all 0.22s ease;
+}
+.exec-escala .form-check-input:checked + .form-check-label {
+  color: #e7ebf5;
+  background: linear-gradient(145deg, #2f3548, #262b3a);
+  box-shadow: 4px 4px 10px #171b26, -3px -3px 9px #3a4258;
+}
+
+.painel-exec { margin-bottom: 24px; }
+.exec-titulo {
+  font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase;
+  color: #8fd0e8; margin-bottom: 13px;
+}
+.mapa-eyebrow { letter-spacing: 2.4px; font-size: 10px; color: var(--tom-trilha); margin-bottom: 11px; }
+.mapa-pagina h2 { font-weight: 560; letter-spacing: -0.6px; margin: 0 0 10px; }
+.mapa-lead { color: var(--neu-fraco); font-size: 13px; line-height: 1.65; margin: 0; }
+
+/* ---------- KPIs neumorficos -------------------------------------------- */
+.neu-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(186px, 1fr));
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.neu-kpi {
+  background: linear-gradient(145deg, var(--neu-alto), var(--neu-base));
+  border-radius: 20px;
+  padding: 19px 20px;
+  box-shadow: 9px 9px 20px var(--neu-sombra), -9px -9px 20px var(--neu-luz);
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+}
+
+.neu-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: 13px 13px 26px var(--neu-sombra), -11px -11px 24px var(--neu-luz);
+}
+
+.kpi-rotulo { font-size: 10.5px; letter-spacing: 1.3px; text-transform: uppercase; color: var(--neu-fraco); }
+.kpi-valor { font-size: 23px; font-weight: 600; margin: 9px 0 7px; letter-spacing: -0.5px; }
+.kpi-fonte { font-size: 10px; color: #7f89a0; line-height: 1.5; font-family: ui-monospace, monospace; }
+
+.tom-bom .kpi-valor { color: var(--tom-bom); }
+.tom-ruim .kpi-valor { color: var(--tom-ruim); }
+.tom-alerta .kpi-valor { color: var(--tom-alerta); }
+
+/* ---------- trilha percorrida ------------------------------------------- */
+.trilha-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 18px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--neu-base);
+  box-shadow: inset 5px 5px 12px var(--neu-sombra), inset -5px -5px 12px var(--neu-luz);
+}
+
+.trilha-label { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--neu-fraco); }
+
+.trilha-item {
+  font-size: 12px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  color: var(--tom-trilha);
+  background: linear-gradient(145deg, var(--neu-alto), var(--neu-base));
+  box-shadow: 3px 3px 8px var(--neu-sombra), -3px -3px 8px var(--neu-luz);
+}
+
+.trilha-item + .trilha-item::before { content: "\2192  "; color: var(--neu-fraco); }
+
+/* ---------- palco do mapa ------------------------------------------------ */
+.mapa-scroll {
+  overflow: auto;
+  /* min-width:0 impede o palco largo de empurrar a pagina inteira para o lado:
+     quem rola e esta caixa, nao o body. */
+  min-width: 0;
+  max-width: 100%;
+  max-height: 78vh;
+  border-radius: 24px;
+  padding: 6px;
+  background: var(--neu-base);
+  box-shadow: inset 7px 7px 18px var(--neu-sombra), inset -7px -7px 18px var(--neu-luz);
+  perspective: 1200px;
+}
+
+.mapa-palco { position: relative; }
+.mapa-ligacoes { position: absolute; inset: 0; pointer-events: none; }
+
+/* Cada aresta e um par de caixas: tronco vertical + cotovelo arredondado.
+   Nao usamos SVG porque o Dash sanitiza a tag e sobra path orfao. */
+.lig { position: absolute; box-sizing: border-box; }
+
+/* A arvore corre para a direita: o trilho e horizontal e o cotovelo desce ou
+   sobe pela esquerda ate a linha do filho. */
+.lig.trilho { border-top: 2px solid; }
+
+.lig.cotovelo { border-left: 2px solid; }
+.lig.cotovelo.lado-baixo { border-bottom: 2px solid; border-bottom-left-radius: 20px; }
+.lig.cotovelo.lado-cima { border-top: 2px solid; border-top-left-radius: 20px; }
+
+.lig.ramo { border-color: #56617c; opacity: 0.4; }
+
+.lig.trilha {
+  border-color: var(--tom-trilha);
+  border-style: dashed;
+  animation: pulsar 2.4s ease-in-out infinite;
+}
+
+/* A trilha respira para se destacar dos ramos ainda nao percorridos. */
+@keyframes pulsar {
+  0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 3px #8fd0e844); }
+  50%      { opacity: 1;   filter: drop-shadow(0 0 8px #8fd0e888); }
+}
+
+/* ---------- nos ---------------------------------------------------------
+   --z vem do Python (1.0 na raiz, caindo 0.13 por nivel). Ele empurra o ramo
+   para tras: menor, mais apagado e levemente desfocado. E a profundidade de
+   campo que faz a arvore ter fundo em vez de virar organograma chapado. */
+.mapa-nos { position: absolute; inset: 0; transform-style: preserve-3d; }
+
+.neu-no {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 15px 17px;
+  border-radius: 19px;
+  cursor: pointer;
+  background: linear-gradient(145deg, var(--neu-alto), var(--neu-base));
+  box-shadow: 8px 8px 18px var(--neu-sombra), -8px -8px 18px var(--neu-luz);
+  transform: scale(var(--z, 1));
+  transform-origin: top center;
+  opacity: calc(0.42 + var(--z, 1) * 0.58);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, opacity 0.3s ease;
+}
+
+.neu-no:hover {
+  transform: scale(calc(var(--z, 1) + 0.04)) translateY(-3px);
+  box-shadow: 12px 12px 26px var(--neu-sombra), -10px -10px 24px var(--neu-luz);
+  opacity: 1;
+  z-index: 5;
+}
+
+.neu-no:focus-visible { outline: 2px solid var(--tom-trilha); outline-offset: 3px; }
+
+.no-titulo { font-size: 13.5px; font-weight: 600; line-height: 1.3; margin-bottom: 6px; }
+.no-sub { font-size: 11px; color: var(--neu-fraco); line-height: 1.45; margin-bottom: 9px; }
+.no-valor { font-size: 12px; font-weight: 550; }
+.no-nota { font-size: 9.5px; color: #7b8598; margin-top: 7px; font-family: ui-monospace, monospace; }
+
+/* semaforo do prazo */
+.st-ok .no-valor { color: var(--tom-bom); }
+.st-risco .no-valor { color: var(--tom-alerta); }
+.st-critico .no-valor { color: var(--tom-ruim); }
+
+/* onde voce esta no mapa */
+.estado-atual {
+  opacity: 1;
+  box-shadow: 10px 10px 24px var(--neu-sombra), -10px -10px 24px var(--neu-luz),
+              0 0 0 2px var(--tom-trilha), 0 0 26px #8fd0e844;
+}
+
+.estado-percorrido {
+  opacity: 1;
+  background: var(--neu-base);
+  box-shadow: inset 5px 5px 12px var(--neu-sombra), inset -5px -5px 12px var(--neu-luz),
+              0 0 0 1px #8fd0e840;
+}
+
+/* a curva: a decisao que esta acontecendo agora */
+.estado-curva {
+  opacity: 1;
+  filter: none;
+  animation: respirar 2.6s ease-in-out infinite;
+}
+
+/* O caminho que voce NAO seguiu recua: perde cor, escurece e afunda. Assim o
+   que voce esta seguindo e a unica coisa que salta da tela. */
+.mapa-nos.tem-trilha .estado-aberto {
+  opacity: 0.3;
+  filter: grayscale(0.72) brightness(0.62) blur(0.6px);
+  box-shadow: inset 3px 3px 9px var(--neu-sombra), inset -2px -2px 7px #ffffff06;
+}
+.mapa-nos.tem-trilha .estado-aberto:hover {
+  opacity: 0.92;
+  filter: none;
+  box-shadow: 8px 8px 18px var(--neu-sombra), -8px -8px 18px var(--neu-luz);
+}
+.mapa-ligacoes.tem-trilha .lig.ramo { opacity: 0.14; }
+
+/* E o que voce segue ganha luz. */
+.mapa-nos.tem-trilha .estado-atual,
+.mapa-nos.tem-trilha .estado-percorrido { filter: saturate(1.08); }
+
+@keyframes respirar {
+  0%, 100% { box-shadow: 8px 8px 18px var(--neu-sombra), -8px -8px 18px var(--neu-luz), 0 0 0 1.5px var(--tom-curva); }
+  50%      { box-shadow: 8px 8px 18px var(--neu-sombra), -8px -8px 18px var(--neu-luz), 0 0 0 1.5px var(--tom-curva), 0 0 22px #d9b06a4d; }
+}
+
+.estado-aberto { filter: blur(calc((1 - var(--z, 1)) * 1.1px)); }
+.estado-aberto:hover { filter: none; }
+
+/* ---------- log de readaptacao ------------------------------------------ */
+.neu-log {
+  margin-top: 26px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, var(--neu-alto), var(--neu-base));
+  box-shadow: 9px 9px 20px var(--neu-sombra), -9px -9px 20px var(--neu-luz);
+}
+
+.mapa-sinal { font-size: 12px; margin-bottom: 15px; font-weight: 550; }
+.mapa-sinal.on { color: var(--tom-bom); }
+.mapa-sinal.off { color: var(--neu-fraco); }
+
+.ev { display: flex; gap: 13px; padding: 8px 0; border-top: 1px solid #ffffff0d; font-size: 11.5px; }
+.ev-data { color: #6f7992; font-family: ui-monospace, monospace; white-space: nowrap; }
+.ev-txt { color: #b9c2d6; }
+.ev-readapta .ev-txt { color: var(--tom-bom); }
+.ev-passo .ev-txt { color: var(--tom-trilha); }
+.ev-volta .ev-txt { color: var(--tom-alerta); }
+
+/* ======================= POP-UP DA DECISAO ============================== */
+/* O pop-up nunca pode passar da altura da janela: o corpo e que rola, o
+   cabecalho fica preso no topo. Sem isso o conteudo saia pela borda e nao
+   dava para ler o fim. */
+/* `height` e nao so `max-height`: o modo scrollable do Bootstrap resolve o
+   `max-height:100%` do conteudo contra a ALTURA do dialog. Sem altura fixa o
+   dialog cresce com o conteudo e o pop-up vaza para fora da tela. */
+.mapa-modal .modal-dialog {
+  max-width: min(1180px, calc(100vw - 32px));
+  height: calc(100dvh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: 16px auto;
+  display: flex;
+  align-items: stretch;
+}
+
+.neu-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 100%;
+  background: linear-gradient(150deg, var(--neu-alto, #2b3143), var(--neu-base, #232838)) !important;
+  border: 1px solid #ffffff14 !important;
+  border-radius: 24px !important;
+  box-shadow: 0 30px 70px #0009, inset 0 1px #ffffff0f !important;
+  color: #e7ebf5;
+}
+
+.neu-modal .modal-header {
+  flex: 0 0 auto;
+  border-bottom: 1px solid #ffffff12;
+  padding: 18px 24px;
+}
+.neu-modal .modal-title { font-size: 19px; font-weight: 620; letter-spacing: -0.4px; }
+.neu-modal .btn-close { filter: invert(1) grayscale(1) brightness(1.7); opacity: 0.6; }
+.neu-modal .modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px 24px 28px;
+}
+
+.pop-topo {
+  display: flex; flex-wrap: wrap; gap: 10px 22px;
+  align-items: baseline; justify-content: space-between;
+  padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid #ffffff10;
+}
+.pop-sub { font-size: 13px; color: #97a1b8; }
+.pop-valor { font-size: 17px; font-weight: 600; margin-top: 4px; }
+.pop-valor.st-ok { color: #6fd2a8; }
+.pop-valor.st-risco { color: #e8bd7a; }
+.pop-valor.st-critico { color: #e08296; }
+.pop-nota-topo { font-size: 11px; color: #7b8598; font-family: ui-monospace, monospace; }
+
+.pop-h { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
+         color: #8fd0e8; margin: 0 0 14px; }
+.pop-lead { font-size: 12.5px; color: #97a1b8; line-height: 1.6; margin: 0 0 14px; }
+.pop-resumo {
+  font-size: 14px; font-weight: 550; margin-bottom: 18px; padding: 14px 18px;
+  border-radius: 14px; background: #232838; color: #8fd0e8;
+  box-shadow: inset 4px 4px 10px #171b26, inset -4px -4px 10px #333a4f;
+}
+.pop-nota { font-size: 11px; color: #79839a; line-height: 1.6; margin-top: 14px; }
+.pop-vazio { font-size: 12.5px; color: #97a1b8; padding: 16px 0; }
+.pop-aba { padding-top: 20px; }
+.pop-abas { margin: 26px 0 0; border-bottom: 1px solid #ffffff12; }
+.pop-abas .nav-link { color: #97a1b8 !important; border: 0 !important;
+                      font-size: 13px; padding: 10px 16px !important; }
+.pop-abas .nav-link.active {
+  color: #e7ebf5 !important; background: #ffffff0a !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* ---- o que o caminho exige ---- */
+.req-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.neu-req {
+  padding: 14px 16px; border-radius: 15px; background: #232838;
+  box-shadow: inset 4px 4px 10px #171b26, inset -4px -4px 10px #333a4f;
+}
+.req-texto { font-size: 12.5px; font-weight: 560; margin-bottom: 6px; }
+.req-valor { font-size: 13px; color: #8fd0e8; margin-bottom: 6px; }
+.req-fonte { font-size: 9.5px; color: #6f7a90; font-family: ui-monospace, monospace;
+             line-height: 1.5; word-break: break-word; }
+
+/* ---- fluxo mes a mes ---- */
+.fx-corpo { max-height: 460px; overflow-y: auto; padding-right: 4px; }
+.fx-linha {
+  display: grid; grid-template-columns: 74px 1fr 128px 128px;
+  gap: 14px; align-items: center; padding: 11px 12px; border-radius: 13px;
+}
+.fx-linha + .fx-linha { margin-top: 5px; }
+.fx-cab { font-size: 9.5px; letter-spacing: 1.3px; text-transform: uppercase;
+          color: #6f7a90; padding-bottom: 6px; }
+.fx-corpo .fx-linha:nth-child(odd) { background: #ffffff05; }
+.fx-linha.fecha { background: #6fd2a814; box-shadow: inset 0 0 0 1px #6fd2a855; }
+.fx-mes { font-size: 11.5px; font-family: ui-monospace, monospace; color: #aab4c8; }
+.fx-barras { min-width: 0; }
+.fx-par { display: flex; justify-content: space-between; font-size: 10.5px;
+          color: #97a1b8; margin-bottom: 3px; }
+.fx-par.forte { color: #e7ebf5; font-weight: 560; font-size: 11.5px; }
+.fx-par + .barra { margin-bottom: 7px; }
+.barra { height: 6px; border-radius: 99px; background: #0000002e; overflow: hidden; }
+.barra-fill { height: 100%; border-radius: 99px; }
+.barra-fill.boa { background: linear-gradient(90deg, #4f9e7d, #6fd2a8); }
+.barra-fill.ruim { background: linear-gradient(90deg, #9c5364, #e08296); }
+.fx-num { text-align: right; min-width: 0; }
+.fx-sobra { font-size: 13px; font-weight: 600; }
+.fx-sobra.pos { color: #6fd2a8; }
+.fx-sobra.neg { color: #e08296; }
+.fx-acum { font-size: 13px; font-weight: 600; color: #8fd0e8; }
+.fx-detalhe { font-size: 9.5px; color: #6f7a90; margin-top: 3px; }
+
+/* ---- visao por ano: 12 meses, realizado x previsto ---- */
+.exec-eco { font-size: 11px; color: #8fd0e8; letter-spacing: 1px; text-transform: uppercase; }
+
+.ano-legenda { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; }
+.leg-item { font-size: 10.5px; color: #97a1b8; display: flex; align-items: center; gap: 6px; }
+.leg-item::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+.leg-item.realizado::before { background: #8fd0e8; }
+.leg-item.previsto::before { background: #8fd0e8; opacity: 0.32; }
+.leg-item.entra::before { background: #6fd2a8; }
+.leg-item.sai::before { background: #e08296; }
+
+.ano-colunas {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px;
+  align-items: end; height: 210px; padding: 14px 12px 0;
+  border-radius: 16px; background: #232838;
+  box-shadow: inset 5px 5px 13px #171b26, inset -5px -5px 13px #333a4f;
+}
+.col-ano { display: flex; flex-direction: column; height: 100%; min-width: 0; }
+/* Previsto entra mais apagado e tracejado: nao e fato, e estimativa. */
+.col-ano.previsto { opacity: 0.55; }
+.col-ano.previsto .col-par { border-bottom: 1px dashed #ffffff26; }
+.col-par {
+  flex: 1 1 auto; display: flex; gap: 3px; align-items: flex-end;
+  min-height: 0; padding-bottom: 4px;
+}
+/* Palco 3D: as colunas ficam inclinadas para tras, como um grafico visto de
+   cima. A perspectiva vive no container para todas compartilharem o mesmo
+   ponto de fuga - aplicada barra a barra, cada uma teria o seu e o conjunto
+   pareceria torto. */
+.palco-3d { perspective: 900px; perspective-origin: 50% 120%; }
+.palco-3d .col-ano { transform-style: preserve-3d; }
+.palco-3d .col-par { transform: rotateX(9deg); transform-origin: bottom center; }
+
+.col-barra {
+  flex: 1 1 0; min-height: 2px;
+  border-radius: 5px 5px 0 0;
+  /* A barra cresce da base ate a altura final: o valor "sobe" ao trocar de mes. */
+  transition: height 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.3s ease, transform 0.3s ease;
+  /* A face lateral e o brilho de topo dao volume sem custar nenhum canvas. */
+  box-shadow: inset -3px 0 5px #00000059, inset 2px 0 4px #ffffff1f,
+              0 5px 14px #0000005e;
+  animation: subir-coluna 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.col-barra.entra { background: linear-gradient(180deg, #7fe0b6, #3f7a61 78%, #2d5a47); }
+.col-barra.sai { background: linear-gradient(180deg, #ef93a6, #8a4a58 78%, #66353f); }
+
+/* Cada coluna entra um pouco depois da anterior: o grafico se desenha da
+   esquerda para a direita em vez de aparecer pronto. */
+@keyframes subir-coluna {
+  from { height: 0 !important; opacity: 0; }
+}
+.col-ano:nth-child(1) .col-barra { animation-delay: 0.02s; }
+.col-ano:nth-child(2) .col-barra { animation-delay: 0.06s; }
+.col-ano:nth-child(3) .col-barra { animation-delay: 0.1s; }
+.col-ano:nth-child(4) .col-barra { animation-delay: 0.14s; }
+.col-ano:nth-child(5) .col-barra { animation-delay: 0.18s; }
+.col-ano:nth-child(6) .col-barra { animation-delay: 0.22s; }
+.col-ano:nth-child(7) .col-barra { animation-delay: 0.26s; }
+.col-ano:nth-child(8) .col-barra { animation-delay: 0.3s; }
+.col-ano:nth-child(9) .col-barra { animation-delay: 0.34s; }
+.col-ano:nth-child(10) .col-barra { animation-delay: 0.38s; }
+.col-ano:nth-child(11) .col-barra { animation-delay: 0.42s; }
+.col-ano:nth-child(12) .col-barra { animation-delay: 0.46s; }
+
+.col-ano:hover .col-barra { filter: brightness(1.22); transform: translateZ(14px); }
+
+.neu-graf {
+  margin-top: 18px; padding: 20px 22px 16px; border-radius: 20px;
+  background: linear-gradient(145deg, #2b3143, #232838);
+  box-shadow: 9px 9px 20px #171b26, -9px -9px 20px #333a4f;
+}
+.col-mes { font-size: 10px; color: #97a1b8; text-align: center; order: 3; padding-top: 6px; }
+.col-sobra { font-size: 9.5px; text-align: center; order: 4; }
+.col-sobra.pos { color: #6fd2a8; }
+.col-sobra.neg { color: #e08296; }
+
+.ano-tabela { margin-top: 18px; display: flex; flex-direction: column; gap: 4px; }
+.ano-linha {
+  display: grid; grid-template-columns: 72px repeat(4, 1fr) 84px;
+  gap: 10px; align-items: baseline; padding: 9px 12px; border-radius: 11px;
+  font-size: 11.5px;
+}
+.ano-linha.realizado { background: #ffffff08; }
+.ano-linha.previsto { opacity: 0.6; }
+.ano-linha-mes { font-family: ui-monospace, monospace; color: #aab4c8; }
+.ano-linha-v { color: #97a1b8; }
+.ano-linha-v.forte { font-weight: 620; }
+.ano-linha-v.pos { color: #6fd2a8; }
+.ano-linha-v.neg { color: #e08296; }
+.ano-linha-tag { font-size: 9.5px; color: #6f7a90; text-align: right; }
+
+.ano-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.neu-ano {
+  padding: 19px 20px; border-radius: 19px;
+  background: linear-gradient(145deg, #2b3143, #232838);
+  box-shadow: 8px 8px 18px #171b26, -8px -8px 18px #333a4f;
+}
+.ano-titulo { font-size: 26px; font-weight: 640; letter-spacing: -1px; }
+.ano-sub { font-size: 10px; color: #6f7a90; margin-bottom: 15px; }
+.ano-linhas { margin-bottom: 12px; }
+.ano-acum { font-size: 11px; color: #8fd0e8; margin-top: 10px; }
+
+/* ---- acao e discussao ---- */
+.neu-acao {
+  margin-top: 28px; padding: 22px; border-radius: 20px; background: #232838;
+  box-shadow: inset 5px 5px 13px #171b26, inset -5px -5px 13px #333a4f;
+}
+.neu-acao textarea {
+  background: #1d2231 !important; color: #e7ebf5 !important;
+  border: 1px solid #ffffff14 !important; border-radius: 13px !important;
+  font-size: 13px !important; padding: 13px 15px !important;
+}
+.pop-acoes { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 15px; }
+.btn-seguir {
+  background: linear-gradient(135deg, #5a8fa8, #7a6f96) !important;
+  border: 0 !important; border-radius: 12px !important;
+  padding: 11px 22px !important; font-size: 13px !important; font-weight: 560 !important;
+  box-shadow: 5px 5px 14px #171b26, -3px -3px 10px #333a4f !important;
+}
+.btn-seguir:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.btn-reconsultar { border-radius: 12px !important; font-size: 12.5px !important; }
+.pop-aviso { margin-top: 13px; font-size: 12.5px; color: #e8bd7a; min-height: 18px; }
+
+.disc-lista { display: flex; flex-direction: column; gap: 13px; }
+.neu-disc {
+  padding: 16px 18px; border-radius: 16px;
+  background: linear-gradient(145deg, #2b3143, #232838);
+  box-shadow: 6px 6px 15px #171b26, -6px -6px 15px #333a4f;
+}
+.disc-cab { display: flex; flex-wrap: wrap; gap: 9px; align-items: baseline; margin-bottom: 10px; }
+.disc-agente { font-size: 12.5px; font-weight: 620; color: #8fd0e8; }
+.disc-papel { font-size: 10.5px; color: #6f7a90; }
+.disc-data { font-size: 10px; color: #5f6980; margin-left: auto;
+             font-family: ui-monospace, monospace; }
+.disc-motivo {
+  font-size: 12px; color: #97a1b8; font-style: italic;
+  padding: 9px 13px; border-left: 2px solid #ffffff1f; margin-bottom: 11px;
+}
+.disc-corpo { font-size: 12.5px; line-height: 1.65; white-space: pre-wrap; }
+.disc-corpo.ok { color: #d3dbea; }
+.disc-corpo.espera { color: #e8bd7a; }
+.disc-corpo.erro { color: #e08296; font-size: 11.5px; }
+
+/* ======================= RESPONSIVO ===================================== */
+@media (max-width: 991px) {
+  .fx-linha { grid-template-columns: 62px 1fr 104px; }
+  /* No aperto some a coluna de acumulado, que e a menos urgente. */
+  .fx-linha > .fx-num:last-child { display: none; }
+}
+
+@media (max-width: 767px) {
+  .neu-kpis { grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 11px; }
+  .neu-kpi { padding: 14px 15px; border-radius: 17px; }
+  .kpi-valor { font-size: 19px; margin: 7px 0 5px; }
+  .kpi-rotulo { font-size: 9.5px; }
+  .kpi-fonte { display: none; }
+  .mapa-hero { padding: 14px 2px 18px; gap: 14px; }
+  .mapa-pagina h2 { font-size: 22px; }
+  .exec-controles { width: 100%; }
+  .exec-mes { flex: 1 1 140px; }
+  .exec-escala { flex: 0 0 auto; }
+  .exec-escala .form-check-label { padding: 8px 16px; }
+
+  /* Em tela pequena o pop-up ocupa a tela inteira, senao sobra moldura e
+     falta espaco justamente para o fluxo. */
+  .mapa-modal .modal-dialog {
+    max-width: 100vw; width: 100vw;
+    height: 100dvh; max-height: 100dvh; margin: 0;
+  }
+  .neu-modal { max-height: 100%; border-radius: 0 !important; }
+  .neu-modal .modal-header { padding: 14px 16px; }
+  .neu-modal .modal-title { font-size: 16px; }
+
+  /* Arrastar o mapa com o dedo precisa ser confortavel. */
+  .mapa-scroll { overscroll-behavior-x: contain; }
+  .neu-no { padding: 12px 13px; }
+  .no-titulo { font-size: 12.5px; }
+  .no-sub { font-size: 10px; }
+  .estado-aberto { filter: none; }
+
+  .neu-modal { border-radius: 18px !important; }
+  .neu-modal .modal-body { padding: 16px 15px 22px; }
+  .req-grade { grid-template-columns: 1fr; }
+  .ano-grade { grid-template-columns: 1fr; }
+  /* 12 colunas em 390px viram tracinhos; o grafico do ano rola de lado. */
+  .ano-colunas { grid-template-columns: repeat(12, 40px); overflow-x: auto; height: 180px; }
+  .ano-linha { grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+  .ano-linha-tag { text-align: left; }
+  .fx-corpo { max-height: none; }
+  .fx-linha { grid-template-columns: 1fr; gap: 7px; padding: 12px 13px; }
+  .fx-cab { display: none; }
+  .fx-linha > .fx-num:last-child { display: flex; }
+  .fx-num { text-align: left; display: flex; gap: 10px; align-items: baseline; }
+  .fx-mes { font-size: 12px; color: #8fd0e8; font-weight: 600; }
+  .pop-acoes { flex-direction: column; }
+  .pop-acoes .btn { width: 100%; }
+  .disc-data { margin-left: 0; }
+}
+
+@media (max-width: 575px) {
+  .trilha-linha { padding: 11px 13px; }
+  .trilha-item { font-size: 11px; padding: 5px 10px; }
+  .neu-log { padding: 16px; }
+  .ev { flex-direction: column; gap: 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapa-fundo .camada { transform: none !important; }
+  .lig.trilha { animation: none; }
+  .estado-curva { animation: none; }
+  .neu-no, .neu-kpi, .btn-seguir { transition: none; }
+}
+
+/* Mes sem lancamento no banco: nao e realizado nem previsao, e buraco. */
+.leg-item.vazio::before { background: repeating-linear-gradient(45deg,#6f7a90,#6f7a90 2px,transparent 2px,transparent 4px); }
+.col-ano.vazio { opacity: 0.32; }
+.col-ano.vazio .col-par {
+  background: repeating-linear-gradient(45deg,#ffffff0a,#ffffff0a 3px,transparent 3px,transparent 7px);
+  border-radius: 5px 5px 0 0;
+}
+.col-sobra.vazio { color: #6f7a90; font-style: italic; }
+.ano-linha.vazio { opacity: 0.42; }
+.ano-linha.vazio .ano-linha-v { color: #6f7a90; }

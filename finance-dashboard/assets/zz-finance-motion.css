@@ -1,0 +1,38 @@
+/* Soft directional light; depth comes from the charts and purposeful transitions. */
+:root { --motion-light:#f5fafc; --motion-shadow:rgba(56,90,116,.14); }
+.content-container { perspective:none; }
+#page[data-dash-is-loading="true"] { opacity:.65;cursor:progress; }
+.glass-panel-static, .glass-card-kpi, .content-container .card {
+  background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(229,240,245,.82)) !important;
+  box-shadow:12px 18px 38px var(--motion-shadow),-8px -8px 24px rgba(255,255,255,.75),inset 0 1px 0 #fff !important;
+  transition:box-shadow .3s ease,transform .3s ease,border-color .3s ease;
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;will-change:auto;
+}
+.spatial-chart { isolation:isolate; border-radius:18px; min-width:0; touch-action:pan-y; }
+.spatial-chart .modebar { background:rgba(246,250,253,.88) !important; border-radius:10px; }
+.spatial-chart .modebar-btn path { fill:#637f91 !important; }
+.spatial-chart:focus-within { outline:2px solid #70aec3; outline-offset:3px; }
+.glass-card-kpi h4 { position:relative; }
+.glass-card-kpi h4 { white-space:nowrap !important;font-size:clamp(1.1rem,1.45vw,1.5rem) !important; }
+.glass-card-kpi h4[data-motion-value] { color:transparent !important; }
+.glass-card-kpi h4[data-motion-value]::after { content:attr(data-motion-value); color:var(--luz-texto,#263b51); position:absolute; left:0; top:0; }
+#mes-prev,#mes-next,#mes-hoje,#btn-ocultar-sidebar { transition:transform .18s ease,box-shadow .2s ease; background:linear-gradient(145deg,#fff,#e4edf4) !important; color:#35586e !important; border:1px solid #ffffffdc !important; box-shadow:3px 5px 12px rgba(62,87,110,.18),inset 0 1px #ffffffb0 !important; }
+#mes-prev:active,#mes-next:active,#mes-hoje:active { transform:translateY(2px); box-shadow:inset 2px 2px 5px #728ca535; }
+.modal-backdrop.show { backdrop-filter:blur(5px); background:#5b789a; opacity:.22; }
+.modal-content { box-shadow:0 35px 100px #243e6250; }
+.modal.show .modal-dialog { animation:finance-focus .36s cubic-bezier(.2,.7,.25,1); }
+@keyframes finance-focus { from { opacity:.3;transform:translateY(22px) scale(.97); } to { opacity:1;transform:none; } }
+@media (hover:hover) {
+  .glass-panel-static:hover { box-shadow:14px 22px 48px #405f802d,-6px -6px 22px #ffffffb0,inset 0 1px #fff !important; }
+  /* Keep labels and touch targets steady while a 3D graph is being operated. */
+  .content-container .card:has(.js-plotly-plot):hover { transform:none !important; }
+}
+@media (max-width:760px) {
+  .spatial-chart { border-radius:12px; }
+  .glass-panel-static { padding:8px !important; }
+  .glass-panel-static,.glass-card-kpi,.content-container .card { backdrop-filter:none !important;-webkit-backdrop-filter:none !important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .content-container *,.modal-dialog { animation:none !important;transition:none !important;scroll-behavior:auto !important; }
+  .glass-panel-static:hover,.glass-card-kpi:hover,.content-container .card:hover { transform:none !important; }
+}

@@ -1,0 +1,27 @@
+{
+  "source": "Local fin-dashboard service, source files only",
+  "date": "2026-09-28",
+  "runtime": "Dash/Flask, Gunicorn on loopback port 9500",
+  "upstream_sha256": {
+    "app.py": "fb6e0a27350b882b896847e5f6f2ba68cb0a548d166001005c1570c5b53c0f44",
+    "finance_engine.py": "0a2e182fdc88f8fa3d3bc417ce589814622d49aafbb3fbaf82c3112e91c2708f",
+    "finance_scenarios.py": "b9736e45ca52d6d2e566c950fc753f0410d86240c13e44349e4cc8b0622dd512",
+    "finance_planning.py": "0f3749a1db97bdaaea668b7e512ba235d4f7529302ab1c40b993d40d23479f81",
+    "finance_agentes.py": "8fcb2f7441f21b887164a8a91a0744ec75a96ec4738803ccf58d3738818cccdc",
+    "finance_tree.py": "73021c4afea7e8af62bf9f8638b4aa9bcb3744565a9064a1b5904b4bd492c6bd",
+    "finance_canvas.py": "be78cc5b98fdc2a92028f6221e04971a45e8d380c9b830ba647857cedf47f617",
+    "finance_motion.py": "5935c76b56d8cf92b44582663af8ae04b45478770ac540a717e2591a7c01a0a9",
+    "finance_graficos3d.py": "8693a97c1697777293e2a99a51905fd55127d5651e72b6ba80d56b5dfed4cbb3",
+    "assets/dashboard-profundidade.css": "5d1140e4f452612a33e10393e2ca6757c1c1377513660188f5da945d52021264",
+    "assets/finance-studio.css": "4f6c0f5fabbb2f4dda2fd0972ad3aeb2156077c0373fece190b3c92e01c32b0e",
+    "assets/mapa-financeiro.css": "d15019204266bff3709d27955349e7d34977af44904d27681fd114375a518388",
+    "assets/mapa-parallax.js": "270b3198dd4702ba753bb1d206b6d9fae8a8ba9029fce5f60ef3366b87e4175e",
+    "assets/tema-luz.css": "56cecf4c986a66ab34002220d03ad9515f90543b3cb8160071f9e1b03307e732",
+    "assets/zz-finance-motion.css": "62bbe6b96ce316dce75721fa8e304c592dccc54d64dc3b4b36bf0760f60ecfa0",
+    "assets/zz-finance-motion.js": "e8694abda66b1a3f79bce0d5d2e67e60d2738b695c9e735e8d2550b91408b9ed",
+    "assets/zzz-finance-canvas.css": "03f0f49305d3497307f00161f1412cc5ccd334aaf0f41c3ed7a3fc6a2dcf4b83",
+    "assets/zzz-finance-canvas.js": "3a6cf8b5181d81d707461014843c737b73d849887aa0ffdc62b966e413502574",
+    "assets/zzzz-finance-readability.css": "e42d825e43cfe50f73bb3342ade72d6cd3347d0023ee0bbdb7026caf14ed5f5a"
+  },
+  "adaptation": "app.py is a public adapter, not the private app."
+}

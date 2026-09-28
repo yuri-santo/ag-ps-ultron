@@ -1,0 +1,252 @@
+/* Profundidade, 3D e neumorfismo no dashboard inteiro.
+ *
+ * Carrega depois de finance-studio.css (ordem alfabetica dos assets), entao
+ * sobrepoe o tema plano sem precisar edita-lo.
+ *
+ * Tres camadas de ilusao, todas baratas:
+ *   1. fundo em parallax por velocidade de scroll (--px/--py vem do JS)
+ *   2. relevo neumorfico nos cartoes (luz em cima-esquerda, sombra embaixo)
+ *   3. inclinacao 3D sutil no hover, com perspectiva no container
+ */
+
+:root {
+  --p-base: #232838;
+  --p-alto: #2b3143;
+  --p-luz: #343b50;
+  --p-sombra: #161a25;
+  --p-borda: #ffffff12;
+}
+
+/* ---------- 1. fundo global em parallax --------------------------------- */
+/* O JS cria este bloco no body de qualquer pagina, uma unica vez. */
+/* inset:0 e obrigatorio: com inset negativo o bloco passa da janela e cria
+   barra de rolagem horizontal na pagina inteira. A folga que o parallax
+   precisa fica nas camadas de dentro, contidas pelo overflow:hidden. */
+.fundo-global {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fundo-global .camada-g {
+  position: absolute;
+  inset: -24vh -24vw;
+  transform: translate3d(
+    calc(var(--px, 0px) * var(--sp) * -1),
+    calc(var(--py, 0px) * var(--sp) * -1),
+    0
+  );
+  will-change: transform;
+}
+
+.camada-g1 {
+  --sp: 0.10;
+  background:
+    radial-gradient(ellipse 72% 52% at 16% 6%, #4d5b8430, transparent 60%),
+    radial-gradient(ellipse 62% 46% at 86% 20%, #6b5a802b, transparent 62%);
+}
+
+.camada-g2 {
+  --sp: 0.30;
+  opacity: 0.42;
+  background-image:
+    linear-gradient(#ffffff09 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff09 1px, transparent 1px);
+  background-size: 96px 96px;
+  -webkit-mask-image: radial-gradient(ellipse 82% 72% at 50% 32%, #000 22%, transparent 76%);
+  mask-image: radial-gradient(ellipse 82% 72% at 50% 32%, #000 22%, transparent 76%);
+}
+
+.camada-g3 {
+  --sp: 0.58;
+  opacity: 0.5;
+  background:
+    radial-gradient(1.6px 1.6px at 11% 22%, #b9c9e6, transparent 52%),
+    radial-gradient(1.4px 1.4px at 37% 61%, #9fb6da, transparent 52%),
+    radial-gradient(1.8px 1.8px at 64% 17%, #cbd8f0, transparent 52%),
+    radial-gradient(1.3px 1.3px at 83% 69%, #a5bade, transparent 52%),
+    radial-gradient(1.5px 1.5px at 26% 85%, #b0c4e4, transparent 52%),
+    radial-gradient(1.2px 1.2px at 54% 43%, #c2d2ee, transparent 52%);
+}
+
+/* O conteudo precisa ficar na frente do fundo fixo.
+   `.modal` fica de fora de proposito: o Bootstrap o coloca em z-index 1055 e
+   rebaixar para 1 jogava o pop-up para tras do backdrop e da barra lateral. */
+.content-container,
+.topbar-container,
+.sidebar,
+nav { position: relative; z-index: 1; }
+
+/* Sem isto o fundo fixo em parallax cria barra de rolagem horizontal.
+   `clip` nao gera caixa de rolagem, diferente de `hidden`. */
+html, body { overflow-x: clip; }
+
+/* ---------- 2. relevo neumorfico nos cartoes ---------------------------- */
+.content-container { perspective: 1400px; }
+
+.glass-panel,
+.glass-panel-static,
+.glass-card-kpi,
+.content-container .card {
+  background: linear-gradient(145deg, var(--p-alto), var(--p-base)) !important;
+  border: 1px solid var(--p-borda) !important;
+  border-radius: 20px !important;
+  box-shadow: 9px 9px 22px var(--p-sombra), -9px -9px 22px var(--p-luz) !important;
+  transform-style: preserve-3d;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.32s ease !important;
+}
+
+/* 3. Inclinacao: o cartao levanta a borda de cima e se aproxima. O angulo e
+   pequeno de proposito - passar disso vira enjoo, nao profundidade. */
+.glass-panel:hover,
+.glass-card-kpi:hover,
+.content-container .card:hover {
+  transform: translateY(-4px) rotateX(2.4deg) !important;
+  box-shadow: 14px 18px 34px var(--p-sombra), -10px -10px 26px var(--p-luz) !important;
+  border-color: #ffffff1f !important;
+}
+
+/* Cartao de KPI com a luz vindo de cima, reforcando o relevo. */
+.glass-card-kpi { position: relative; overflow: hidden; }
+.glass-card-kpi::before {
+  content: "";
+  position: absolute;
+  inset: 1px 1px auto 1px;
+  height: 46%;
+  border-radius: 19px 19px 60% 60% / 19px 19px 22% 22%;
+  background: linear-gradient(180deg, #ffffff09, transparent);
+  pointer-events: none;
+}
+
+/* ---------- barra lateral e topo ---------------------------------------- */
+.sidebar {
+  background: linear-gradient(170deg, #252b3c, #1d2230) !important;
+  box-shadow: 14px 0 34px #0000004d, inset -1px 0 var(--p-borda) !important;
+}
+
+.topbar-container {
+  background: #1e2331e8 !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  backdrop-filter: blur(14px) !important;
+  box-shadow: 0 10px 28px #00000038, inset 0 -1px var(--p-borda) !important;
+}
+
+.sidebar .nav-link {
+  border-radius: 12px !important;
+  transition: transform 0.22s ease, background 0.22s ease !important;
+}
+.sidebar .nav-link:hover { transform: translateX(3px); background: #ffffff0a !important; }
+.sidebar .nav-link.active {
+  background: linear-gradient(120deg, #8297b426, #8297b40f) !important;
+  box-shadow: inset 3px 3px 8px #00000038, inset -2px -2px 7px #ffffff0a !important;
+}
+
+/* ---------- botoes com relevo ------------------------------------------- */
+.content-container .btn,
+.topbar-container .btn {
+  border-radius: 12px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease !important;
+  box-shadow: 4px 4px 11px var(--p-sombra), -3px -3px 9px var(--p-luz) !important;
+}
+.content-container .btn:hover,
+.topbar-container .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 7px 16px var(--p-sombra), -4px -4px 12px var(--p-luz) !important;
+  filter: brightness(1.08);
+}
+.content-container .btn:active,
+.topbar-container .btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 4px 4px 10px var(--p-sombra), inset -3px -3px 9px var(--p-luz) !important;
+}
+
+/* ---------- campos afundados -------------------------------------------- */
+.content-container .form-control,
+.content-container .Select-control {
+  background: #1d2231 !important;
+  border: 1px solid var(--p-borda) !important;
+  border-radius: 12px !important;
+  box-shadow: inset 4px 4px 10px #00000042, inset -3px -3px 9px #ffffff07 !important;
+}
+
+/* ---------- tabelas e graficos ------------------------------------------ */
+.dash-table-container {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 7px 7px 18px var(--p-sombra), -6px -6px 16px var(--p-luz);
+}
+/* NAO colocar padding, borda ou box-shadow em .js-plotly-plot: e o elemento
+   que o Plotly mede para se dimensionar. Qualquer caixa extra aqui vira um
+   laco de "mede -> cresce -> mede de novo" e o grafico estica sem parar,
+   esticando o scroll da pagina junto. O enfeite vai no container em volta. */
+.js-plotly-plot { border-radius: 18px; }
+
+.content-container .card-body:has(> .js-plotly-plot),
+.content-container .card-body:has(> .dash-graph) {
+  border-radius: 18px;
+  background: linear-gradient(145deg, #2a3042, #222736);
+  box-shadow: inset 4px 4px 12px var(--p-sombra), inset -4px -4px 12px var(--p-luz);
+}
+
+/* Rede de seguranca: grafico sem altura declarada nao pode crescer sozinho. */
+.content-container .dash-graph,
+.content-container .js-plotly-plot { max-height: 70vh; }
+
+/* ---------- entrada em profundidade ------------------------------------- */
+/* Cada bloco nasce um pouco atras e vem para a frente. Roda uma vez, no load
+   da pagina, e por isso nao briga com o scroll. */
+@keyframes vir-da-profundidade {
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+.content-container .glass-panel,
+.content-container .glass-card-kpi {
+  animation: vir-da-profundidade 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.content-container .glass-card-kpi:nth-child(2) { animation-delay: 0.05s; }
+.content-container .glass-card-kpi:nth-child(3) { animation-delay: 0.1s; }
+.content-container .glass-card-kpi:nth-child(4) { animation-delay: 0.15s; }
+.content-container .glass-card-kpi:nth-child(5) { animation-delay: 0.2s; }
+.content-container .glass-card-kpi:nth-child(6) { animation-delay: 0.25s; }
+
+/* ---------- responsivo --------------------------------------------------- */
+@media (max-width: 991px) {
+  /* Tabela larga rola sozinha em vez de espremer a pagina. */
+  .dash-table-container { overflow-x: auto; }
+  .js-plotly-plot { padding: 4px; }
+}
+
+@media (max-width: 767px) {
+  .content-container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    perspective: none;
+  }
+  .glass-panel, .glass-card-kpi, .content-container .card {
+    border-radius: 16px !important;
+    box-shadow: 6px 6px 15px var(--p-sombra), -6px -6px 15px var(--p-luz) !important;
+  }
+  .topbar-container { padding-top: 10px !important; padding-bottom: 10px !important; }
+  h1 { font-size: 24px !important; }
+  h2 { font-size: 21px !important; }
+  h3 { font-size: 18px !important; }
+  .js-plotly-plot { min-height: 240px; }
+}
+
+/* Em toque nao existe hover: inclinar ali so causaria travamento visual. */
+@media (hover: none) {
+  .glass-panel:hover, .glass-card-kpi:hover, .content-container .card:hover,
+  .content-container .btn:hover, .topbar-container .btn:hover { transform: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fundo-global .camada-g { transform: none !important; }
+  .content-container .glass-panel,
+  .content-container .glass-card-kpi { animation: none; }
+  .glass-panel, .glass-card-kpi, .content-container .card,
+  .sidebar .nav-link, .content-container .btn { transition: none !important; }
+}

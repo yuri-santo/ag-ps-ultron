@@ -1,0 +1,24 @@
+/* Final theme authority for data surfaces: opaque, readable, no mixed themes. */
+:root{--luz-fundo:#f1f5fa;--luz-fundo-2:#e8eff7;--luz-texto:#203449;--luz-fraco:#536880;--luz-aqua:#197a91;--luz-verde:#187557;--luz-rosa:#b44765;--luz-ambar:#956016;--luz-sombra:rgba(36,63,92,.09)}
+html body{color:var(--luz-texto)!important}
+.content-container .card,.glass-panel-static{background:linear-gradient(145deg,#ffffff,#f7fafc)!important;border:1px solid #dce6ef!important;box-shadow:0 10px 26px #243f5c12,inset 0 1px #fff!important}
+.dash-table-container{border:1px solid #d5e1eb;border-radius:14px!important;box-shadow:none!important;overflow-x:auto!important;background:#fff;color:#203449;color-scheme:light}
+html body .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td,
+html body .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th{font-family:Inter,'Segoe UI',sans-serif!important;font-size:13px!important;line-height:1.5!important;border-bottom:1px solid #e1e9f1!important;border-right:0!important;padding:11px 13px!important;color:#203449!important;background:#fff!important}
+html body .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th{background:#e9f0f7!important;color:#304d65!important;font-weight:650!important}
+html body .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:nth-child(odd) td{background:#f4f8fc!important}
+html body .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover td{background:#e8f4f7!important}
+html body .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td.cell--selected{background:#dceff5!important;outline:2px solid #197a91!important;outline-offset:-2px}
+.dash-table-container .dash-cell-value,.dash-table-container .dash-header,.dash-table-container input{color:inherit!important;-webkit-text-fill-color:currentColor;opacity:1;font-variant-numeric:tabular-nums}
+.dash-table-container .dash-filter input{color:#304d65!important;background:#fff!important}
+.dash-table-container .previous-next-container,.dash-table-container .previous-next-container button{color:#304d65!important;background:#f4f8fc!important}
+.dash-table-container .column-header-name{text-align:left}
+.dash-table-container .dash-spreadsheet-container{overflow-x:auto!important;max-width:100%}
+.content-container .table{--bs-table-color:#203449;--bs-table-bg:#fff;--bs-table-striped-color:#203449;--bs-table-striped-bg:#f4f8fc;--bs-table-hover-color:#203449;--bs-table-hover-bg:#e8f4f7;border-color:#dce6ef}
+.js-plotly-plot .legendtext,.js-plotly-plot .xtick text,.js-plotly-plot .ytick text{font-weight:500}
+.dash-table-container td[data-dash-column="categoria"],.dash-table-container td[data-dash-column="descricao"]{text-align:left!important}
+.content-container .card:has(.dash-table-container):hover{transform:none!important}
+.nav-link.active{background:#e1f0f4!important;color:#135c70!important;box-shadow:inset 3px 0 #197a91!important}
+.text-muted{color:#536880!important}
+@media(max-width:760px){.dash-table-container .dash-spreadsheet-container{padding-bottom:5px}.content-container .card-body{padding:12px!important}.dash-table-container{border-radius:10px!important}}
+@media(prefers-reduced-motion:reduce){.js-plotly-plot,.dash-table-container{animation:none!important;transition:none!important}}

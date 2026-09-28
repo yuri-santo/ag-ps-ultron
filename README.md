@@ -20,6 +20,10 @@
 
 ## Comece por aqui
 
+**Dashboard financeiro reproduzivel:** [codigo e inicializacao com dados ficticios](finance-dashboard/README.md).
+**Novas referencias avaliadas:** [marketing, catalogos de APIs e transcricao](docs/REPOSITORIOS-AVALIADOS-2026-09-28.md).
+**Audio do Desktop:** [causa do timeout, correcao e verificacao](docs/HERMES-DESKTOP-AUDIO.md).
+
 **Recriar em outra máquina:** comece por [RECRIAR-ULTRON.md](docs/RECRIAR-ULTRON.md).
 O clone ainda não inclui todos os conectores e componentes da instalação pessoal.
 O guia diferencia demonstração executável, dependências externas e partes ausentes.

@@ -1,0 +1,22 @@
+:root { --bg-main:#f5f7f8; }
+body { background:#f5f7f8!important; color:#20343f!important; font-family:system-ui,sans-serif; margin:0; }
+.public-header { padding:16px 24px; display:flex; align-items:center; gap:18px; border-bottom:1px solid #dae2e6; background:white; flex-wrap:wrap; }
+.public-header strong { font-size:23px; }
+.public-header span { color:#607780; font-size:13px; }
+.public-header input { margin-left:auto; width:110px; padding:6px; }
+.public-nav { display:flex; flex-wrap:wrap; gap:5px 16px; padding:12px 24px; border-bottom:1px solid #dae2e6; background:white; }
+.public-nav a { color:#416271; font-size:14px; padding:5px 0; text-decoration:none; }
+.public-nav a.active { color:#07836a; border-bottom:2px solid #07836a; }
+.public-content { padding:24px; max-width:1600px; margin:auto; }
+.public-content h2 { font-size:25px; margin-bottom:22px; }
+.public-content h3 { font-size:20px; }
+.public-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; padding:0 0 24px; }
+.public-kpi { border-left:3px solid #0c9379; padding-left:13px; display:flex; flex-direction:column; gap:5px; }
+.public-kpi span { font-size:13px; color:#5b707b; }
+.public-kpi strong { font-size:23px; overflow-wrap:anywhere; }
+.public-actions { display:flex; flex-wrap:wrap; gap:12px; margin:18px 0; }
+.public-login { max-width:380px; padding:24px; margin:15vh auto; }
+.public-login h1 { font-size:30px; margin-bottom:24px; }
+.public-content .card { border-radius:8px!important; }
+.public-content .dash-table-container { margin-top:16px; }
+@media(max-width:700px) { .public-content { padding:16px 10px; } .public-header,.public-nav { padding:12px; } .public-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .public-kpi strong { font-size:20px; } }

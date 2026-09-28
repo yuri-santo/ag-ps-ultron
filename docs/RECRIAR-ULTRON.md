@@ -62,6 +62,10 @@ PyMuPDF serve para inspecao/verificacao de PDFs.
 
 ## 3. Hermes local: requisito externo
 
+O [dashboard financeiro](../finance-dashboard/README.md) tambem pode ser
+executado separadamente, com base ficticia ou vazia e senha propria.
+Ele nao depende de copiar o banco financeiro pessoal do autor.
+
 Instale e configure o [Hermes Agent](https://github.com/NousResearch/hermes-agent)
 seguindo a documentacao oficial da versao escolhida. Configure provedor de modelo
 e canal de mensagens e confirme o funcionamento antes de adicionar plugins.
