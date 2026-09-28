@@ -9,11 +9,11 @@ import json
 from pathlib import Path
 
 try:
-    from .render_report import ACCENT, ACCENT_DEEP, ACCENT_SOFT, INK, MUTED, NAO_APURADO, _stamp, build_minutes, quem_falou
+    from .render_report import ACCENT, ACCENT_DEEP, ACCENT_SOFT, INK, MUTED, NAO_APURADO, _stamp, build_minutes, quem_falou, citation, executive_lines
 except ImportError:
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from render_report import ACCENT, ACCENT_DEEP, ACCENT_SOFT, INK, MUTED, NAO_APURADO, _stamp, build_minutes, quem_falou
+    from render_report import ACCENT, ACCENT_DEEP, ACCENT_SOFT, INK, MUTED, NAO_APURADO, _stamp, build_minutes, quem_falou, citation, executive_lines
 
 
 def _rgb(hex_color):
@@ -108,7 +108,7 @@ def render_docx(data, destination):
     t.font.color.rgb = _rgb(ACCENT_DEEP)
     sp = right.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    sr = sp.add_run(f"{ata['titulo'][:70]} · {ata['data']}")
+    sr = sp.add_run(f"{ata['titulo']} · {ata['data']}")
     sr.font.size = Pt(8.5)
     sr.font.color.rgb = _rgb(MUTED)
 
@@ -122,23 +122,16 @@ def render_docx(data, destination):
 
     nome = '' if ata['titulo'].strip().lower() in ('reunião', 'reuniao', '') else f" {ata['titulo']}"
     escopo = f" do {ata['escopo']}" if ata['escopo'] else ''
+    heading('Resumo executivo')
+    for line in executive_lines(ata):
+        para(line)
     heading('Chamada')
-    para(f"A reunião{nome}{escopo} foi realizada em {ata['data']}, em {ata['local']}. Começou às {ata['inicio']} "
-         f"e foi presidida por {ata['presidente']}, com {ata['secretaria']} no cargo de secretaria.")
+    para(f"A reunião{nome}{escopo} foi realizada em {ata['data']}, em {ata['local']}. Início registrado: {ata['inicio']}. "
+         f"Organizador do convite: {ata['organizador']}. Presidência: {ata['presidente']}.")
     heading('Participantes')
     para(f"Presença registrada no áudio: {lista(ata['presentes'])}.")
     para(f"Convocados pelo convite: {lista(ata['convocados'])}.")
     para(f"Membros ausentes: {NAO_APURADO} (a captura não confirma presença nominal).")
-    heading('Aprovação das Atas Anteriores')
-    para('Não houve pedido de aprovação de atas anteriores registrado nesta reunião.')
-    heading('Relatórios Apresentados')
-    linhas = [x for x in ata['relatorios'].splitlines() if x.strip()]
-    if linhas:
-        para('Chamados e documentos consultados como contexto (não são falas da reunião):')
-        for linha in linhas:
-            doc.add_paragraph(linha, style='List Bullet')
-    else:
-        para('Nenhum relatório formal foi registrado nesta reunião.')
     heading('Assuntos Pendentes')
     if ata['pendentes'] or ata['revogadas']:
         for item in ata['pendentes']:
@@ -175,12 +168,12 @@ def render_docx(data, destination):
             row[0].text = record.get('text', '')
             row[1].text = record.get('owner') or 'não informado'
             row[2].text = record.get('deadline') or 'não informado'
-            row[3].text = f"{_stamp(record)} · {', '.join(record.get('transcript_ids', []))}"
+            row[3].text = citation(record, ata)
     heading('Encerramento')
     fim = f"às {ata['fim']}." if ata['fim'] != NAO_APURADO else '(horário de encerramento não apurado pelo registro automático).'
-    para(f"Nada mais havendo a tratar, a reunião foi encerrada {fim} A presente ata foi lavrada pela secretaria a partir "
-         'da gravação e da transcrição da reunião e segue para aprovação dos participantes.')
-    para(f"Ata enviada por: Ultron · Ata aprovada por: ______________________ · Sessão {ata['sessao']}", muted=True, size=8)
+    para(f"Fim registrado da captura: {fim} Documento gerado a partir dos registros disponíveis; "
+         'a aprovação dos participantes não foi verificada.')
+    para(f"Gerado por: Ultron · Revisão: ______________________ · Sessão {ata['sessao']}", muted=True, size=8)
     sign = doc.add_table(rows=2, cols=2)
     sign.rows[0].cells[0].text = '_' * 34
     sign.rows[0].cells[1].text = '_' * 34
@@ -203,6 +196,14 @@ def render_docx(data, destination):
     heading('Anexo II — Transcrição integral (horários e origem do áudio)')
     for line in (ata['transcript'] or '[Nenhuma fala transcrita]').split('\n'):
         para(line, size=8.5)
+    doc.add_page_break()
+    heading('Índice de referências das falas')
+    for tid, label in ata['citation_labels'].items():
+        para(f'{label} = {tid}', size=8)
+    if ata['relatorios'].strip():
+        heading('Contexto consultado — documentos externos à reunião')
+        for line in ata['relatorios'].splitlines():
+            para(line, size=8)
     doc.core_properties.title = 'Ata formal de reunião — ' + ata['titulo']
     doc.core_properties.author = 'Ultron'
     doc.save(str(destination))

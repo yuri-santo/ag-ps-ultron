@@ -1,0 +1,26 @@
+{
+  "webhookBodyType": "advanced",
+  "meetingSoftware": "Google Meet",
+  "meetingTitle": "Exemplo sintetico - revisao de proposta",
+  "meetingStartTimestamp": "2026-09-28T12:00:00.000Z",
+  "meetingEndTimestamp": "2026-09-28T12:30:00.000Z",
+  "transcript": [
+    {
+      "personName": "Ana (exemplo)",
+      "timestamp": "2026-09-28T12:01:00.000Z",
+      "transcriptText": "Vou revisar a proposta. Ainda precisamos confirmar o prazo."
+    },
+    {
+      "personName": "Bruno (exemplo)",
+      "timestamp": "2026-09-28T12:02:00.000Z",
+      "transcriptText": "Vamos analisar o custo antes de aprovar."
+    }
+  ],
+  "chatMessages": [
+    {
+      "personName": "Ana (exemplo)",
+      "timestamp": "2026-09-28T12:03:00.000Z",
+      "chatMessageText": "Documento ficticio: https://example.org/proposta"
+    }
+  ]
+}

@@ -13,12 +13,20 @@
   <img src="https://img.shields.io/badge/uso-pessoal-8d96a8" alt="uso pessoal">
 </p>
 
-> **Privado.** Este repositório é o retrato do agente: código, arquitetura,
+> **Código público; dados privados.** Este repositório é o retrato do agente: código, arquitetura,
 > ferramentas, painel e automações. **Nenhum segredo, chave, e-mail real ou
 > banco de dados pessoal está aqui** — foram trocados por placeholders ou
 > deixados de fora (ver o fim de [ARCHITECTURE.md](ARCHITECTURE.md)).
 
 ## Comece por aqui
+
+**Recriar em outra máquina:** comece por [RECRIAR-ULTRON.md](docs/RECRIAR-ULTRON.md).
+O clone ainda não inclui todos os conectores e componentes da instalação pessoal.
+O guia diferencia demonstração executável, dependências externas e partes ausentes.
+
+**Melhorias de reuniões e autonomia:** [pesquisa e plano técnico](docs/EVOLUCAO-AGENTE-2026-09-28.md),
+[módulo de relatórios e Transcriptonic](agent/meeting/README.md) e
+[canais, TikTok Ads e experimentos de renda](docs/CANAIS-E-RENDA.md).
 
 | Documento | O que tem |
 |---|---|
@@ -75,7 +83,11 @@ O agente é o **Hermes** (NousResearch). A instalação base do Hermes e do
 roda no WSL do notebook)*. Os plugins deste repositório são instalados com
 `agent/deploy_lab.py` / `agent/deploy.py` e os scripts em `agent/scripts/`.
 
-## Subir tudo de novo (1 comando)
+## Atualizar o retrato da instalação existente
+
+Este comando sincroniza uma instalação já configurada; não instala o sistema
+em uma máquina nova. Os scripts de sincronização podem reconstruir arquivos:
+revise o diff para preservar contribuições feitas diretamente no repositório.
 Quando o agente mudar, o retrato deste repositório se atualiza sozinho com:
 ```bash
 bash agent/scripts/sync-repo.sh          # reconstrói, sanitiza, guarda de segredos, push

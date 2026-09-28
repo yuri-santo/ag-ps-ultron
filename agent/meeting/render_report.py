@@ -82,11 +82,13 @@ def build_minutes(data):
     escopo = ' / '.join(x for x in (state.get('ticket_client') or '', state.get('project') or '') if x)
     join_url = str(meeting.get('join_url') or meeting.get('online_meeting_url') or '')
     local = meeting.get('location') or ('Microsoft Teams' if 'teams.' in join_url else '') or 'ambiente virtual (áudio capturado no Saitama)'
-    presidente = _pessoa(meeting.get('organizer')) or 'Yuri Santos'
+    organizador = _pessoa(meeting.get('organizer')) or NAO_APURADO
+    presidente = _pessoa(data.get('chair')) or NAO_APURADO
     convocados = [p for p in (_pessoa(a) for a in meeting.get('attendees') or []) if p]
     canais = {e for e in re.findall(r'\] (Yuri — microfone|Reunião — áudio recebido)', data.get('transcript') or '')}
     presentes = []
-    if 'Yuri — microfone' in canais or not canais:
+    eventos = data.get('transcript_events') or []
+    if 'Yuri — microfone' in canais or any(ev.get('channel') == 'mic' for ev in eventos):
         presentes.append('Yuri Santos (microfone local)')
     speakers = data.get('speakers') or {}
     rotulos = speakers.get('rotulos') or {}
@@ -94,9 +96,16 @@ def build_minutes(data):
     if vozes:
         presentes.append(f"{vozes} voz(es) distinta(s) no áudio da reunião (Participante 1 a {vozes}; "
                          'separadas por diarização local, nomes não identificados automaticamente)')
-    elif 'Reunião — áudio recebido' in canais:
+    elif 'Reunião — áudio recebido' in canais or any(ev.get('channel') == 'loopback' for ev in eventos):
         presentes.append('demais participantes pelo áudio da reunião (identificação nominal não disponível)')
-    eventos = data.get('transcript_events') or []
+    if speakers.get('source') == 'platform_captions':
+        presentes.extend(str(label) + ' (rótulo da plataforma; identidade não verificada)'
+                         for label in speakers.get('labels', []))
+    citation_labels = {}
+    for tid in [str(ev.get('id')) for ev in eventos if ev.get('id')] + [
+            str(tid) for record in records for tid in record.get('transcript_ids', [])]:
+        if tid not in citation_labels:
+            citation_labels[tid] = f'F{len(citation_labels) + 1:03d}'
     transcricao = data.get('transcript') or ''
     if eventos:
         linhas = []
@@ -104,11 +113,12 @@ def build_minutes(data):
             quando = _dt(ev.get('at'))
             rotulo = ('Yuri — microfone' if ev.get('channel') == 'mic' else
                       rotulos.get(str(ev.get('id')), 'Reunião — áudio recebido') if ev.get('channel') == 'loopback'
-                      else str(ev.get('channel') or ''))
+                      else rotulos.get(str(ev.get('id')), str(ev.get('channel') or '')))
             if rotulos and ev.get('channel') == 'loopback' and str(ev.get('id')) in rotulos:
                 rotulo += ' (áudio da reunião)'
             aviso = '[Baixa confiança — revisar áudio] ' if ev.get('confidence') == 'low' else ''
-            linhas.append(f"[{quando.strftime('%d/%m %H:%M:%S') if quando else ''}] {rotulo}\n{aviso}{ev.get('text', '')}")
+            ref = citation_labels.get(str(ev.get('id')), '')
+            linhas.append(f"[{ref} · {quando.strftime('%d/%m %H:%M:%S') if quando else ref}] {rotulo}\n{aviso}{ev.get('text', '')}")
         transcricao = '\n\n'.join(linhas)
     decisoes = [r for r in records if r.get('status') == 'confirmed' and r.get('kind') == 'decision']
     acoes = [r for r in records if r.get('status') == 'confirmed' and r.get('kind') == 'action']
@@ -117,12 +127,41 @@ def build_minutes(data):
     relatorios = references(data.get('sources') or []) or ''
     return {
         'titulo': titulo, 'escopo': escopo, 'data': _data(inicio), 'inicio': _hora(inicio), 'fim': _hora(fim),
-        'local': local, 'presidente': presidente, 'secretaria': 'Ultron (secretaria automatizada)',
+        'local': local, 'presidente': presidente, 'organizador': organizador,
+        'secretaria': 'Ultron (secretaria automatizada)',
         'convocados': convocados, 'presentes': presentes, 'decisoes': decisoes, 'acoes': acoes,
         'revogadas': revogadas, 'pendentes': pendentes, 'relatorios': relatorios,
         'sessao': session.get('id', ''), 'report_text': data.get('report_text') or '',
         'transcript': transcricao, 'rotulos': rotulos, 'vozes': vozes, 'rejeitados': data.get('rejected', consolidated.get('rejected', 0)),
+        'citation_labels': citation_labels,
+        'quality': {'transcript_events': len(eventos),
+                    'low_confidence': sum(ev.get('confidence') == 'low' for ev in eventos),
+                    'rejected': data.get('rejected', consolidated.get('rejected', 0)),
+                    'pending_audio': state.get('pending_audio', 0)},
     }
+
+
+def citation(record, ata):
+    labels = [ata['citation_labels'].get(str(tid), 'referência indisponível')
+              for tid in record.get('transcript_ids', [])]
+    return ' · '.join(filter(None, [_stamp(record), ', '.join(labels)]))
+
+
+def executive_lines(ata):
+    lines = [f"{len(ata['decisoes'])} decisão(ões) e {len(ata['acoes'])} ação(ões) confirmadas no registro."]
+    for record in (ata['decisoes'] + ata['acoes'])[:5]:
+        kind = 'Decisão' if record.get('kind') == 'decision' else 'Ação'
+        excerpt = str(record.get('text', ''))
+        if len(excerpt) > 320:
+            excerpt = excerpt[:317] + '...'
+        lines.append(f"{kind}: {excerpt} [{citation(record, ata)}]")
+    if not ata['decisoes'] and not ata['acoes']:
+        lines.append('Não há conclusões confirmadas disponíveis; consultar a análise e as falas.')
+    quality = ata['quality']
+    lines.append(f"Qualidade: {quality['rejected']} registro(s)/bloco(s) rejeitado(s); "
+                 f"{quality['low_confidence']} fala(s) sinalizada(s) com baixa confiança; "
+                 f"{quality['pending_audio']} áudio(s) pendente(s).")
+    return lines
 
 
 def quem_falou(record, rotulos):
@@ -223,25 +262,18 @@ def render(data, destination):
     def lista(nomes):
         return ', '.join(e(n) for n in nomes) if nomes else NAO_APURADO
 
-    parts = [Spacer(1, 30 * mm)]
+    parts = [Spacer(1, 22 * mm), p(e(ata['titulo']), sub), p('Resumo executivo', heading)]
+    parts.extend(p(e(line)) for line in executive_lines(ata))
     escopo = f" do {e(ata['escopo'])}" if ata['escopo'] else ''
     nome = '' if ata['titulo'].strip().lower() in ('reunião', 'reuniao', '') else f" <b>{e(ata['titulo'])}</b>"
     parts += [p('Chamada', heading),
               p(f"A reunião{nome}{escopo} foi realizada em {e(ata['data'])}, em "
-                f"{e(ata['local'])}. Começou às {e(ata['inicio'])} e foi presidida por {e(ata['presidente'])}, "
-                f"com {e(ata['secretaria'])} no cargo de secretaria.")]
+                f"{e(ata['local'])}. Início registrado: {e(ata['inicio'])}. "
+                f"Organizador do convite: {e(ata['organizador'])}. Presidência: {e(ata['presidente'])}.")]
     parts += [p('Participantes', heading),
               p(f"Presença registrada no áudio: {lista(ata['presentes'])}."),
               p(f"Convocados pelo convite: {lista(ata['convocados'])}."),
               p(f"Membros ausentes: {NAO_APURADO} (a captura não confirma presença nominal).")]
-    parts += [p('Aprovação das Atas Anteriores', heading),
-              p('Não houve pedido de aprovação de atas anteriores registrado nesta reunião.')]
-    parts += [p('Relatórios Apresentados', heading)]
-    if ata['relatorios'].strip():
-        parts += [p('Chamados e documentos consultados como contexto (não são falas da reunião):')]
-        parts += [p('• ' + e(line), body) for line in ata['relatorios'].splitlines() if line.strip()]
-    else:
-        parts.append(p('Nenhum relatório formal foi registrado nesta reunião.'))
 
     parts.append(p('Assuntos Pendentes', heading))
     if ata['pendentes'] or ata['revogadas']:
@@ -251,7 +283,7 @@ def render(data, destination):
             parts.append(p('• ' + e(claim) + (f' <font color="{MUTED}">— pergunta sugerida: {e(question)}</font>' if question else '')))
         for record in ata['revogadas']:
             parts.append(p(f"• Revogado/corrigido: {e(record.get('text', ''))} "
-                           f"<font color=\"{MUTED}\">[{_stamp(record)}; falas: {e(', '.join(record.get('transcript_ids', [])))}]</font>"))
+                           f"<font color=\"{MUTED}\">[{e(citation(record, ata))}]</font>"))
         if ata['pendentes']:
             parts.append(p('Itens acima são sugestões do copiloto pendentes de confirmação; não são decisões da reunião.', small))
     else:
@@ -263,7 +295,7 @@ def render(data, destination):
             autor = quem_falou(record, ata['rotulos'])
             parts.append(p(f"• {e(record.get('text', ''))} <font color=\"{MUTED}\">[{_stamp(record)}; "
                            + (f"{e(autor)}; " if autor else '')
-                           + f"falas: {e(', '.join(record.get('transcript_ids', [])))}]</font>"))
+                           + f"{e(citation(record, ata))}]</font>"))
     else:
         parts.append(p('Nenhuma decisão confirmada com citação válida.'))
     if ata['acoes']:
@@ -272,8 +304,8 @@ def render(data, destination):
         for record in ata['acoes']:
             rows.append([p(e(record.get('text', '')), cell), p(e(record.get('owner') or 'não informado'), cell),
                          p(e(record.get('deadline') or 'não informado'), cell),
-                         p(f"{_stamp(record)} · {e(', '.join(record.get('transcript_ids', [])))}", cell)])
-        table = Table(rows, colWidths=[78 * mm, 32 * mm, 26 * mm, 34 * mm], repeatRows=1)
+                         p(e(citation(record, ata)), cell)])
+        table = Table(rows, colWidths=[78 * mm, 32 * mm, 26 * mm, 34 * mm], repeatRows=1, splitInRow=1)
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(ACCENT_SOFT)),
             ('LINEBELOW', (0, 0), (-1, 0), 0.8, colors.HexColor(ACCENT_DEEP)),
@@ -282,7 +314,7 @@ def render(data, destination):
             ('TOPPADDING', (0, 0), (-1, -1), 4), ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]))
         parts.append(table)
     if ata['rejeitados']:
-        parts.append(p(f"Lacunas de validação: {ata['rejeitados']} registro(s) rejeitado(s) por falta de citação; "
+        parts.append(p(f"Lacunas de validação: {ata['rejeitados']} registro(s)/bloco(s) rejeitado(s); "
                        'conferir a transcrição integral.', small))
 
     assinatura = Table([[p('_' * 38, body), p('_' * 38, body)],
@@ -291,20 +323,21 @@ def render(data, destination):
     assinatura.setStyle(TableStyle([('TOPPADDING', (0, 0), (-1, -1), 0), ('LEFTPADDING', (0, 0), (-1, -1), 0)]))
     parts.append(KeepTogether([
         p('Encerramento', heading),
-        p(("Nada mais havendo a tratar, a reunião foi encerrada " + (f"às {e(ata['fim'])}." if ata['fim'] != NAO_APURADO
-           else '(horário de encerramento não apurado pelo registro automático).')) + " A presente ata foi lavrada "
-          'pela secretaria a partir da gravação e da transcrição da reunião e segue para aprovação dos participantes.'),
-        p(f"Ata enviada por: Ultron · Ata aprovada por: ______________________ · Sessão {e(ata['sessao'])}", small),
+        p(f"Fim registrado da captura: {e(ata['fim'])}. Documento gerado a partir dos registros disponíveis; "
+          'a aprovação dos participantes não foi verificada.'),
+        p(f"Gerado por: Ultron · Revisão: ______________________ · Sessão {e(ata['sessao'])}", small),
         Spacer(1, 9 * mm), assinatura]))
 
     def texto(title, text, style=body):
         parts.append(p(e(title), heading))
-        for line in (text or '').split('\n'):
+        lines = [piece for line in (text or '').split('\n')
+                 for piece in ([line[i:i + 1500] for i in range(0, len(line), 1500)] or [''])]
+        for line in lines:
             clean = line.strip()
             if clean.startswith('#'):
                 parts.append(p(e(clean.lstrip('#').strip()), sub))
                 continue
-            clean = e(line[:6000])
+            clean = e(line)
             clean = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', clean)
             clean = re.sub(r'`([^`]+)`', r'<font face="Courier">\1</font>', clean)
             if line.lstrip().startswith(('- ', '* ')):
@@ -315,6 +348,11 @@ def render(data, destination):
     texto('Anexo I — Análise executiva da reunião', ata['report_text'] or 'Análise indisponível.')
     parts.append(PageBreak())
     texto('Anexo II — Transcrição integral (horários e origem do áudio)', ata['transcript'] or '[Nenhuma fala transcrita]', mono)
+    parts.append(PageBreak())
+    texto('Índice de referências das falas', '\n'.join(
+        f'{label} = {tid}' for tid, label in ata['citation_labels'].items()), mono)
+    if ata['relatorios'].strip():
+        texto('Contexto consultado — documentos externos à reunião', ata['relatorios'])
     if data.get('include_internal_evidence'):
         if data.get('sources'):
             texto('Anexo III — Referências internas usadas na análise',
@@ -339,7 +377,7 @@ def render(data, destination):
         canvas.drawRightString(width - 40, height - 62, 'ATA FORMAL DE REUNIÃO')
         canvas.setFont(regular, 8.5)
         canvas.setFillColor(colors.HexColor(MUTED))
-        canvas.drawRightString(width - 40, height - 76, f"{ata['titulo'][:70]} · {ata['data']}")
+        canvas.drawRightString(width - 40, height - 76, ata['data'])
         footer(canvas, document)
 
     def later_pages(canvas, document):
@@ -349,7 +387,12 @@ def render(data, destination):
         canvas.drawString(60, height - 38, 'ATA FORMAL DE REUNIÃO')
         canvas.setFont(regular, 8)
         canvas.setFillColor(colors.HexColor(MUTED))
-        canvas.drawRightString(width - 40, height - 38, ata['titulo'][:80])
+        short_title = ata['titulo']
+        while short_title and pdfmetrics.stringWidth(short_title, regular, 8) > width - 275:
+            short_title = short_title[:-1]
+        if short_title != ata['titulo']:
+            short_title = short_title[:-3] + '...'
+        canvas.drawRightString(width - 40, height - 38, short_title)
         canvas.setStrokeColor(colors.HexColor(LINE))
         canvas.setLineWidth(.6)
         canvas.line(40, height - 50, width - 40, height - 50)

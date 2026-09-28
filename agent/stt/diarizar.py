@@ -14,6 +14,9 @@ from pathlib import Path
 
 MODELS = Path(os.environ.get('ULTRON_STT_MODELS', '/root/tools/stt-models'))
 RATE = 16000
+# Temporal evidence thresholds, not calibrated identity probabilities.
+MIN_EVENT_COVERAGE = 0.60
+MIN_SPEAKER_SHARE = 0.70
 
 
 def diarizador(threshold=0.55):
@@ -73,15 +76,31 @@ def atribuir(segmentos, events):
             continue
         a = float(ev['at'])
         b = float(ev.get('end') or a + 3.0)
-        melhor, maior = None, 0.0
+        if b <= a:
+            continue
+        intervalos = {}
         for s, e, spk in segmentos:
-            sobre = min(b, e) - max(a, s)
-            if sobre > maior:
-                melhor, maior = spk, sobre
-        if melhor is not None:
-            if melhor not in ordem:
-                ordem.append(melhor)
-            rotulos[str(ev['id'])] = f'Participante {ordem.index(melhor) + 1}'
+            inicio, fim = max(a, s), min(b, e)
+            if fim > inicio:
+                intervalos.setdefault(spk, []).append((inicio, fim))
+        duracoes = {}
+        for spk, trechos in intervalos.items():
+            # Union prevents repeated/overlapping segments inflating evidence.
+            fim_anterior, total = a, 0.0
+            for inicio, fim in sorted(trechos):
+                total += max(0.0, fim - max(inicio, fim_anterior))
+                fim_anterior = max(fim_anterior, fim)
+            duracoes[spk] = total
+        if not duracoes:
+            continue
+        melhor = max(duracoes, key=duracoes.get)
+        maior = duracoes[melhor]
+        if (maior / (b - a) < MIN_EVENT_COVERAGE
+                or maior / sum(duracoes.values()) < MIN_SPEAKER_SHARE):
+            continue
+        if melhor not in ordem:
+            ordem.append(melhor)
+        rotulos[str(ev['id'])] = f'Participante {ordem.index(melhor) + 1}'
     return rotulos, len(ordem)
 
 
@@ -101,9 +120,11 @@ def diarizar_sessao(audio_dir, events):
     resultado = sd.process(audio).sort_by_start_time()
     segmentos = []
     for r in resultado:
-        s, e = para_absoluto(r.start, mapa), para_absoluto(r.end, mapa)
-        if s is not None and e is not None and e > s:
-            segmentos.append((s, e, int(r.speaker)))
+        # Intersect each recording separately: padding has no absolute time.
+        for off, inicio, dur in mapa:
+            s, e = max(r.start, off), min(r.end, off + dur)
+            if e > s:
+                segmentos.append((inicio + s - off, inicio + e - off, int(r.speaker)))
     rotulos, vozes = atribuir(segmentos, events)
     return {'vozes': vozes, 'rotulos': rotulos, 'duracao_s': round(len(audio) / RATE, 1), 'segmentos': len(segmentos)}
 

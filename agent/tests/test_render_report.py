@@ -1,6 +1,6 @@
 import json, sys, tempfile, unittest
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'meeting_ata'))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'meeting'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import render_report as r
 
@@ -16,7 +16,8 @@ BASE = {'session': {'id': 's1', 'title': 'Reunião', 'created': 1789662754, 'sta
 class MinutesTests(unittest.TestCase):
     def test_fields_come_from_the_record(self):
         ata = r.build_minutes(BASE)
-        self.assertEqual((ata['titulo'], ata['presidente'], ata['local'], ata['inicio']), ('Daily', 'Maria', 'Microsoft Teams', '14:00'))
+        self.assertEqual((ata['titulo'], ata['organizador'], ata['local'], ata['inicio']), ('Daily', 'Maria', 'Microsoft Teams', '14:00'))
+        self.assertEqual(ata['presidente'], r.NAO_APURADO)
         self.assertEqual(ata['data'], '17 de setembro de 2026')
         self.assertEqual(ata['convocados'], ['a@x.com', 'Beto'])
         self.assertEqual([x['text'] for x in ata['decisoes']], ['aprovar'])
@@ -26,7 +27,8 @@ class MinutesTests(unittest.TestCase):
 
     def test_old_payload_without_meeting_or_records_does_not_invent(self):
         ata = r.build_minutes({'session': {'id': 'x', 'title': 'Reunião', 'created': 1789662754, 'state': {}}})
-        self.assertEqual(ata['presidente'], 'Yuri Santos')
+        self.assertEqual(ata['presidente'], r.NAO_APURADO)
+        self.assertEqual(ata['presentes'], [])
         self.assertEqual(ata['convocados'], [])
         self.assertEqual(ata['fim'], r.NAO_APURADO)
         self.assertEqual(ata['decisoes'], [])

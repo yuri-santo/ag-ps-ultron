@@ -1,5 +1,11 @@
 # Manual de instalação — construindo o seu Ag-PS-Ultron
 
+> **Comece pelo [guia atual de reprodução](docs/RECRIAR-ULTRON.md).** Ele cobre
+> o clone público, a demonstração offline de atas, o Ultron Lab e os componentes
+> ainda ausentes. O texto abaixo registra a montagem histórica em VPS; não é um
+> instalador completo do agente local/WSL nem foi revalidado integralmente nas
+> versões atuais dos serviços. O instalador Team legado pode alterar SOULs.
+
 Passo a passo para instalar e configurar cada peça do zero: o Hermes
 Agent (o "Ultron"), o 9Router, as ferramentas de pesquisa restrita e rede, e o painel
 físico. Os comandos abaixo são os reais usados para montar este sistema

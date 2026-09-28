@@ -21,10 +21,21 @@ meu-deck/
   server.py        # servidor HTTP
   panel.html        # a PWA
   manifest.json     # manifest da PWA
+  deck_runtime.py   # módulos locais importados pelo servidor
+  meeting_controls.py
+  hub_api.py
+  audio_controls.py
+  deck_auth.py
+  ...               # demais módulos, páginas, scripts, CSS e JS de panel/
 ```
 
-Copie os três arquivos deste repositório para uma pasta no seu PC (ex:
+Copie a pasta `panel/` completa deste repositório para uma pasta no seu PC (ex:
 `D:\GIT\meu-deck`).
+
+Não copie apenas os três arquivos principais: `server.py` importa módulos
+locais que também dependem de outros arquivos da pasta. Alguns controles
+dependem de WSL, scripts externos e serviços do agente; copiar a pasta permite
+carregar o painel, mas não configura essas integrações automaticamente.
 
 ## 2. Personalize as ações
 

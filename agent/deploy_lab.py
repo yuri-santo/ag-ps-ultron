@@ -140,9 +140,9 @@ class Installer:
     def stage(self, cenario):
         if not (self.home / 'config.yaml').is_file():
             raise RuntimeError('hermes_home_sem_config: ' + str(self.home))
-        self.copy_managed(self.source / PLUGIN, self.home / 'plugins' / PLUGIN)
+        self.copy_managed(self.source / 'plugins' / PLUGIN, self.home / 'plugins' / PLUGIN)
         for name in self.mail_profiles:
-            self.copy_managed(self.source / PLUGIN, self.home / 'profiles' / name / 'plugins' / PLUGIN)
+            self.copy_managed(self.source / 'plugins' / PLUGIN, self.home / 'profiles' / name / 'plugins' / PLUGIN)
         for skill in sorted(p for p in (self.source / 'skills').iterdir() if (p / 'SKILL.md').is_file()):
             self.copy_managed(skill, self.home / 'skills' / SKILL_CATEGORY / skill.name)
         inventory = self.home / 'ultron_lab' / 'homelab.json'

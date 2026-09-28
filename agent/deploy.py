@@ -116,9 +116,9 @@ def main():
             if profile.exists() and not (profile/'.ultron-team-managed').exists():
                 raise RuntimeError('unowned_profile_exists: '+name)
         preserve(plugin)
-        shutil.copytree(source/'ultron_team', plugin, dirs_exist_ok=True,
+        shutil.copytree(source/'plugins/ultron_team', plugin, dirs_exist_ok=True,
                         ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
-        shutil.copy2(source/'personality.md', plugin/'personality.md')
+        shutil.copy2(source/'plugins/ultron_team/personality.md', plugin/'personality.md')
         atomic_text(plugin/'.ultron-team-managed', '20260913\n')
         for name in PROFILES:
             profile = home/'profiles'/name
@@ -141,7 +141,7 @@ def main():
         preserve(home/'SOUL.md')
         save_yaml(home/'config.yaml', activate_config(config))
         atomic_text(home/'SOUL.md', update_soul((home/'SOUL.md').read_text(),
-                    (source/'personality.md').read_text(encoding='utf-8-sig')))
+                    (source/'plugins/ultron_team/personality.md').read_text(encoding='utf-8-sig')))
         meeting = home/'plugins/meeting_copilot/__init__.py'
         original = meeting.read_text()
         old = """        result = await ctx.llm.acomplete(messages,max_tokens=8192,timeout=90,

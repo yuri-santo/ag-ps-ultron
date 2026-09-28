@@ -1,5 +1,10 @@
 # Integrações — tudo com que o Ultron conversa
 
+> Inventário da instalação pessoal, não garantia de conectores distribuídos ou
+> autenticados no clone. Consulte [reprodução](docs/RECRIAR-ULTRON.md) e
+> [plano de canais e anúncios](docs/CANAIS-E-RENDA.md) para distinguir código
+> disponível, configuração externa e capacidade proposta.
+
 Todo o código de interface vive em `/root/tools/` e nos plugins. **Credenciais,
 cookies e tokens ficam de fora** (arquivos `*token*`, `*cookie*`, `client_secret*`,
 `.env`); aqui estão o **canal**, **para que serve** e **o código** que fala com
