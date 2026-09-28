@@ -43,13 +43,13 @@ cada 10 min), `check-aula` (sexta).
 ## Conteúdo e canais (perfil Money)
 | Job | O que faz |
 |---|---|
-| `money-publicador-shorts-08h/12h/19h` | Publica shorts no canal (@paporetocorte). |
+| `money-publicador-shorts-08h/12h/19h` | Publica shorts no canal de conteúdo. |
 | `youtube-cortes-autopilot` | Motor de cortes de vídeo (YouTube). |
 | `tiktok-mercenario-5x` / `tiktok-seller-oportunidades` | Pipeline de afiliados TikTok: radar de produto, roteiro, render, publicação, comentário. |
 | `monitor-promos-novos` | Novas ofertas oficiais para conteúdo. |
 
-## Trabalho (SAP / Easysapers)
-`easysapers-tickets-10h/20h` — sincroniza chamados SAP (perfil **Cris**/**Thor**).
+## Trabalho (SAP / uso profissional)
+Jobs de sincronização de chamados SAP às 10h e 20h (perfis **Cris**/**Thor**).
 
 ## Infra, backup e conhecimento
 | Job | Quando | O que faz |

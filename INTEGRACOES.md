@@ -16,10 +16,10 @@ cada sistema.
 ## Produtividade e trabalho
 | Sistema | Código | Uso |
 |---|---|---|
-| **Microsoft 365 / WorkMail** | `ms_graph.py`, `ms_auth.py`, `workmail_cal.py`, `cal_*.py`, `sync_agenda_unificada.py` | Agenda corporativa + e-mail Easysapers (perfis **Dona**, **Cris**). |
+| **Microsoft 365 / WorkMail** | `ms_graph.py`, `ms_auth.py`, `workmail_cal.py`, `cal_*.py`, `sync_agenda_unificada.py` | Agenda corporativa + e-mail (uso profissional) (perfis **Dona**, **Cris**). |
 | **Google Calendar** | `cal_daily2.py`, `agenda_add.py` | Agenda pessoal unificada com a corporativa. |
 | **Gmail pessoal** | gateway de e-mail | Compras, entregas, segurança de contas (perfil **Greg**). |
-| **Easysapers / SAP** | `fetch_easysapers.py`, `scrape_easysapers.py`, `sync_easysapers_tickets.py`, `scrape_sapeiros.py`, `enrich_sap_knowledge.py` | Chamados SAP, base de conhecimento (perfis **Cris**, **Thor**). |
+|  **Uso profissional / SAP** |  scripts de chamados e base de conhecimento SAP (`scrape_sapeiros.py`, `enrich_sap_knowledge.py`, sincronização de tickets) | Chamados SAP, base de conhecimento (perfis **Cris**, **Thor**). |
 
 ## Saúde
 | Sistema | Código | Uso |
@@ -43,7 +43,7 @@ cada sistema.
 | Sistema | Código | Uso |
 |---|---|---|
 | **TikTok** | `tiktok/` (radar de produto, `affiliate_*`, `content_studio`, `tiktok_case_publisher.py`, render/comentário) | Pipeline de afiliados de ponta a ponta. |
-| **YouTube** | `youtube/` (`autonomous_money_engine.py`, `auto_corte_publicador_loop.py`, downloads, OAuth) | Canal de cortes @paporetocorte. |
+| **YouTube** | `youtube/` (`autonomous_money_engine.py`, `auto_corte_publicador_loop.py`, downloads, OAuth) | Canal de cortes de vídeo. |
 | **Instagram** | `instagram/` (`follow_queue.py`, `monitor_feed_stories.py`) | Monitoramento e crescimento regional. |
 | **Geração de vídeo/imagem** | plugins `video_gen` (Google Veo), `image_gen` (Google Gemini), `kling/` | Cria vídeo/imagem para conteúdo. |
 | **Voz/TTS** | `video_voice.py`, TTS do gateway | Narração e áudio das mensagens. |

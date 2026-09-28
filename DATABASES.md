@@ -40,7 +40,7 @@ horário). Usado por **Dona** e **Maquiavel**.
 |---|---|
 | `promos_*.db`, `buscape*.db`, `deals.db`, `ofertas.db`, `telegram_promos.db` | Radares de promoção (dedup, histórico, "já visto"). |
 | `tiktok/tiktok_product_radar.db` | Radar de produtos TikTok. |
-| `youtube/money_engine.db`, `paporetocorte.db`, `youtube_cortes.db` | Motor de conteúdo YouTube. |
+| `youtube/money_engine.db`, `youtube/<canal>.db`, `youtube_cortes.db` | Motor de conteúdo YouTube. |
 | `sap_sapeiros.db` | Base de conhecimento SAP (Thor). |
 | `orchestration_bus.db` | Barramento de orquestração entre tarefas/agentes. |
 | `meeting_copilot/meetings.db` | Reuniões gravadas/transcritas/atas. |
