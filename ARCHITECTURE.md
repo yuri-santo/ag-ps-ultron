@@ -57,6 +57,17 @@ decisão, com um verificador de fatos (**Frank**) para as alegações que import
 
 ## Componentes
 
+### Evolucao da fila por assunto (especificada, ainda nao ativada)
+
+O [desenho revisado](docs/superpowers/specs/2026-09-29-topic-queue-design.md)
+reutiliza Kanban, dispatcher, dependencias, claims e perfis nativos do Hermes.
+A extensao fica restrita a assuntos, comprovantes, validacao e entrega com
+autoria. Nao existe teto fixo de dois assuntos; concorrencia continua sujeita
+a capacidade configurada e recursos reais. A
+[auditoria nativa](docs/superpowers/specs/2026-09-29-topic-queue-native-audit.md)
+registra lacunas, configuracoes verificadas e 54 testes isolados aprovados.
+Isso nao comprova que a fila nova ja esteja implementada ou operacional.
+
 ### Núcleo
 - **Hermes Agent** — framework de agente (Python) da NousResearch. CLI própria,
   gateway de mensageria (Telegram, e-mail, WhatsApp, Slack…), segredos, sessões
