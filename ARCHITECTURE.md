@@ -92,12 +92,20 @@ de revisores). Ninguém desativa a revisão; falhas de disponibilidade são
 corrigidas, não contornadas.
 
 ### Conselho SDD + Frank
-`conselho_sdd.md` (plugin `ultron_team`) define o método: para pesquisa,
-comparação, recomendação ou decisão de compra, o Ultron (1) reformula a
-intenção, (2) convoca 2–4 especialistas para colher **requisitos** antes de
-qualquer busca, (3) consolida a spec, (4) investiga usando o **Frank**
-(`frank-investigator`) para as alegações decisivas, (5) devolve aos mesmos
-especialistas para votarem, (6) entrega com o placar e as ressalvas.
+`conselho_sdd.md` (plugin `ultron_team`) e a skill `conselho-sdd` definem o
+comitê: o Ultron é líder e juiz da síntese. Ele identifica intenção, requisitos,
+dependências e critérios de aceite; distribui subproblemas aos especialistas
+relevantes via `ultron_specialist`; coleta evidências e pareceres reais;
+pondera alternativas, riscos e divergências; e justifica a decisão final.
+O Frank (`frank-investigator`) sustenta alegações que exigem pesquisa, somente
+quando a ferramenta realmente retorna evidências. Não há quantidade fixa de
+conselheiros nem votação capaz de superar um bloqueio obrigatório.
+
+Saudações isoladas têm validação local restrita a respostas canônicas; análises
+substantivas continuam na revisão independente. O protocolo do comitê não é
+uma fila persistente: agendamento por assunto e outbox ainda precisam de
+implementação. Estado, limites e testes em
+[Correção de presença e comitê](docs/CORRECAO-PRESENCA-COMITE-2026-09-29.md).
 
 ### Memória
 - **ai-memory** (docker, `127.0.0.1:49374`, MCP) — memória semântica de

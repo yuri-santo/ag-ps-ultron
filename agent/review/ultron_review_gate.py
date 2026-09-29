@@ -19,8 +19,9 @@ def tool_evidence(messages):
     Results remain untrusted tool data, not proof of every claim. Sensitive-file reads
     contribute only a receipt hash. Excerpts explicitly disclose truncation.
     """
-    messages=[m for m in (messages or []) if isinstance(m,dict)]
-    boundary=max((i for i,m in enumerate(messages) if m.get('role')=='user' and not any(str(k).startswith('_') and v for k,v in m.items())),default=-1)
+    messages, boundary = current_user_turn(messages)
+    if boundary < 0:
+        return []
     current=messages[boundary+1:];calls={};receipts=[]
     for m in current:
         for call in m.get('tool_calls') or []:
@@ -86,24 +87,36 @@ _REVIEW_SYNTHETIC_FLAGS = (
     '_kanban_stop_synthetic', '_dropped_toolcall_nudge', '_review_stop_synthetic',
 )
 
+
+def current_user_turn(messages):
+    """Persistence metadata is not a synthetic user turn (notably _row_id)."""
+    rows = [m for m in (messages or []) if isinstance(m, dict)]
+    boundary = next((i for i in range(len(rows) - 1, -1, -1)
+                     if rows[i].get('role') == 'user'
+                     and not any(rows[i].get(f) for f in _REVIEW_SYNTHETIC_FLAGS)), -1)
+    return rows, boundary
+
+
+def request_text(content):
+    if isinstance(content, str):
+        return clean_request(content)
+    if isinstance(content, list):
+        texts = [part['text'] for part in content
+                 if isinstance(part, dict) and part.get('type') in ('text', 'input_text')
+                 and isinstance(part.get('text'), str)]
+        return '[Multimodal user request; attachments require inspection.]\n' + '\n'.join(texts)
+    return ''
+
+
 def task_review_request(messages, fallback=''):
     """Review the real user task, including a matching observed Kanban body.
 
     Only public tool data from the current user turn is added. No system memory,
     assistant reasoning, unrelated cards, or synthetic protocol nudges are copied.
     """
-    rows = [m for m in (messages or []) if isinstance(m, dict)]
-    boundary = -1
-    request = ''
-    for index in range(len(rows) - 1, -1, -1):
-        message = rows[index]
-        if message.get('role') != 'user' or any(message.get(f) for f in _REVIEW_SYNTHETIC_FLAGS):
-            continue
-        content = message.get('content', '')
-        if isinstance(content, str) and clean_request(content):
-            request, boundary = clean_request(content), index
-            break
-    request = request or clean_request(fallback)
+    rows, boundary = current_user_turn(messages)
+    request = (request_text(rows[boundary].get('content')) if boundary >= 0
+               else clean_request(fallback))
     match = re.fullmatch(r'work kanban task (t_[A-Za-z0-9]+)', request.strip(), re.I)
     if not match:
         return redact(request)[:4000]
@@ -136,6 +149,8 @@ def task_review_request(messages, fallback=''):
 
 
 _SOCIAL_REPLIES = (
+    (r'(?:(?:oi|ol[aá])[,! ]+)?(?:voc[eê] )?(?:t[aá]|est[aá]) (?:por )?a[ií]',
+     'Tô aqui. O que manda?'),
     (r'(?:oi|ol[aá]|e a[ií])', 'Oi! Como posso ajudar?'),
     (r'(?:bom dia|boa tarde|boa noite)', None),
     (r'(?:tudo bem(?: com voc[eê])?|como (?:voc[eê] )?est[aá]|como vai voc[eê])',
@@ -145,44 +160,56 @@ _SOCIAL_REPLIES = (
 
 
 def triage_request(request):
-    """Only standalone social utterances skip a network review."""
+    """Only a complete standalone social utterance admits local validation."""
     normalized = re.sub(r'\s+', ' ', str(request or '').strip().lower())
     normalized = normalized.strip(' \t\r\n!?.,')
     return 'social' if any(re.fullmatch(pattern, normalized) for pattern, _ in _SOCIAL_REPLIES) else 'review'
 
 
 def social_response(request, candidate):
+    """Use a closed response set, never approve arbitrary short model output."""
     normalized = re.sub(r'\s+', ' ', str(request or '').strip().lower()).strip(' \t\r\n!?.,')
     fallback = next((reply or normalized.capitalize() + '! Como posso ajudar?'
                      for pattern, reply in _SOCIAL_REPLIES if re.fullmatch(pattern, normalized)),
                     'Oi! Como posso ajudar?')
-    text = str(candidate or '').strip()
-    if (not text or len(text) > 500 or re.search(
-            r'(?i)revis[aã]o conclu[ií]da|nenhuma pend[eê]ncia|resposta ainda n[aã]o foi liberada|independent_review',
-            text)):
-        return fallback
-    return text
+    return fallback
 
 
 def review_final(agent,text,turn_id):
-    previous=getattr(agent,'_ultron_review_verdict',None)
-    if previous and previous.get('turn_id')==turn_id:return previous['visible_text']
     messages = getattr(agent, "_ultron_review_messages", [])
+    rows, boundary = current_user_turn(messages)
+    source = rows[boundary].get('content') if boundary >= 0 else None
+    current = rows[boundary + 1:] if boundary >= 0 else rows
+    tool_attempt = any(m.get('role') in ('tool', 'function')
+                       or m.get('tool_calls') or m.get('function_call') for m in current)
     raw_req = task_review_request(messages, getattr(agent, "_ultron_review_request", ""))
     if is_cron(agent) and getattr(agent, '_ultron_cron_task', None):
         raw_req = redact(agent._ultron_cron_task)[:4000]
-    if not is_cron(agent) and triage_request(raw_req) == 'social' and not tool_evidence(messages):
-        visible = social_response(raw_req, text)
-        agent._ultron_review_verdict = {'turn_id': turn_id, 'status': 'not_required',
-                                        'completed': True, 'reason': 'standalone_social_turn',
-                                        'visible_text': visible}
+    evidence = tool_evidence(messages)
+    if is_cron(agent):
+        evidence += [item for item in (getattr(agent, '_ultron_cron_evidence', None) or [])
+                     if isinstance(item, dict)][:8]
+    input_hash = hashlib.sha256(json.dumps(
+        [source, raw_req, text, evidence, bool(tool_attempt), producer(agent), is_cron(agent)],
+        sort_keys=True, ensure_ascii=True, default=str).encode()).hexdigest()
+    previous = getattr(agent, '_ultron_review_verdict', None)
+    if previous and previous.get('turn_id') == turn_id and previous.get('input_sha256') == input_hash:
+        return previous['visible_text']
+    # Inspect the full original input, not the truncated/redacted reviewer excerpt.
+    if (not is_cron(agent) and isinstance(source, str)
+            and triage_request(source) == 'social' and not tool_attempt):
+        visible = social_response(source, text)
+        agent._ultron_review_verdict = {
+            'turn_id': turn_id, 'status': 'approved', 'completed': True,
+            'reason': 'local_social_validation', 'validator': 'standalone_social_v1',
+            'request_sha256': hashlib.sha256(source.encode()).hexdigest(),
+            'output_sha256': hashlib.sha256(visible.encode()).hexdigest(),
+            'input_sha256': input_hash, 'visible_text': visible,
+        }
         return visible
+    agent._ultron_review_verdict = None
     if not hold_output(agent):return text
     try:
-        evidence = tool_evidence(messages)
-        if is_cron(agent):
-            evidence += [item for item in (getattr(agent, '_ultron_cron_evidence', None) or [])
-                         if isinstance(item, dict)][:8]
         record=broker().review_output(task_id=turn_id,producer=producer(agent),output=text,
             request=redact(raw_req)[:4000],
             evidence=evidence,task_kind='answer',
@@ -192,7 +219,7 @@ def review_final(agent,text,turn_id):
     visible = text
     if record.get('completed') is not True:
         visible = 'Não consegui concluir a revisão desta resposta. A entrega ainda não está pronta; tente novamente em instantes.'
-    agent._ultron_review_verdict={**record,'turn_id':turn_id,'visible_text':visible}
+    agent._ultron_review_verdict={**record,'turn_id':turn_id,'input_sha256':input_hash,'visible_text':visible}
     return visible
 
 

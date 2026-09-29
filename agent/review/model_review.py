@@ -386,6 +386,10 @@ def router_transport(route, payload, max_tokens, timeout):
     system += (' Report only concrete unresolved defects in issues; successful checks belong in checks. '
                'Equivalent faithful paraphrases are acceptable unless the task explicitly requires verbatim output. '
                'Do not invent extra acceptance requirements or treat a previous pending-review notice quoted by the user as a permanent prohibition on reviewing a corrected answer.')
+    system += (' The assistant normally responds in Brazilian Portuguese (pt-BR). '
+               'Interpret short informal Portuguese, including missing accents, in that context; '
+               'do not infer a different language solely from an ambiguous short phrase. '
+               'Respect an explicit request for another language or an artifact intended for a different-language audience.')
     if int(payload.get('attempt', 1) or 1) > 1:
         system += (' The previous attempt did not return a usable JSON verdict. Keep reasoning brief and '
                    'answer with the compact JSON object only, with no prose or code fences.')

@@ -39,6 +39,10 @@ def register(ctx):
         return json.dumps(result, ensure_ascii=False)
     ctx.register_tool(name='ultron_specialist', toolset='ultron_team', schema=schema,
                       handler=dispatch, description=schema['description'])
+    council = Path(__file__).with_name('conselho_sdd.md')
+    if council.is_file():
+        ctx.register_system_prompt_section(
+            'ultron_sdd', council.read_text(encoding='utf-8-sig').strip(), max_chars=4000)
     personality = Path(__file__).with_name('personality.md')
     if personality.is_file():
         ctx.register_system_prompt_section('ultron_team', personality.read_text(encoding='utf-8-sig'), max_chars=4000)

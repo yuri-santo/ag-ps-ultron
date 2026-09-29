@@ -17,7 +17,7 @@ class Context:
     def register_hook(self, name, callback):
         self.hooks[name] = callback
     def register_system_prompt_section(self, *args, **kwargs):
-        self.sections.append(kwargs)
+        self.sections.append({**kwargs, 'name': args[0], 'text': args[1]})
 
 
 class PluginTests(unittest.TestCase):
@@ -36,8 +36,18 @@ class PluginTests(unittest.TestCase):
     def test_system_prompt_respects_installed_sdk_limit(self):
         with patch('pathlib.Path.is_file', return_value=True), patch('pathlib.Path.read_text', return_value='Synthetic identity'):
             ctx = self.context('/root/.hermes')
-        self.assertEqual(len(ctx.sections), 1)
+        self.assertEqual(len(ctx.sections), 2)
         self.assertLessEqual(ctx.sections[0]['max_chars'], 4000)
+
+    def test_committee_contract_is_loaded_separately_without_truncation(self):
+        ctx = self.context('/root/.hermes')
+        sections = {s['name']: s for s in ctx.sections}
+        self.assertIn('ultron_sdd', sections)
+        contract = sections['ultron_sdd']['text']
+        self.assertLessEqual(len(contract), sections['ultron_sdd']['max_chars'])
+        self.assertIn('Ultron é o líder', contract)
+        self.assertIn('não são uma votação automática', contract)
+        self.assertIn('revisão independente', contract)
 
     def test_voice_failure_preserves_text_and_explains_missing_audio(self):
         ctx = self.context('/root/.hermes')

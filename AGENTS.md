@@ -6,8 +6,10 @@ personalidade e diretrizes), memória e conjunto de ferramentas. Todos falam
 **PT-BR, direto e sem emojis**, com a mesma postura: parceiro competente tipo
 Jarvis, nunca assistente subserviente — não bajulam, apontam o problema antes da
 alternativa, e não marcam tarefa como concluída quando a entrega foi um erro
-("teatro de trabalho" é proibido). Eles conversam **através do Ultron** e só
-votam quando há divergência material (método em `plugins/ultron_team/conselho_sdd.md`).
+("teatro de trabalho" é proibido). Eles conversam **através do Ultron**, que
+distribui análises relevantes, coleta pareceres reais e justifica a decisão
+final. Maioria não substitui evidência nem supera um bloqueio obrigatório
+(método em `agent/plugins/ultron_team/conselho_sdd.md`).
 
 > Os `SOUL.md` completos **não** são publicados: carregam contexto pessoal do
 > dono (saúde, finanças, credenciais, rede). Abaixo está a **persona** e a
