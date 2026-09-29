@@ -71,7 +71,8 @@ BRANDS = {
     'mercado livre': ('mercadolivre.com.br', 'mercadolivre.com'),
     'mercado pago': ('mercadopago.com.br', 'mercadopago.com'), 'banco central': ('bcb.gov.br',),
     'microsoft': ('microsoft.com', 'office.com', 'outlook.com', 'live.com', 'microsoftonline.com'),
-    'google': ('google.com', 'gmail.com', 'youtube.com'), 'apple': ('apple.com', 'icloud.com'),
+    'google': ('google.com', 'gmail.com', 'youtube.com', 'googleapis.com', 'gstatic.com'),
+    'apple': ('apple.com', 'icloud.com'),
     'netflix': ('netflix.com',), 'amazon': ('amazon.com', 'amazon.com.br'), 'shopee': ('shopee.com.br',),
     'linkedin': ('linkedin.com',), 'whatsapp': ('whatsapp.com', 'wa.me'),
 }

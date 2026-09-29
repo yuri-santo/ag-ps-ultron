@@ -6,6 +6,11 @@
 > este documento é o retrato de como está hoje. Segredos, e-mails, IDs de chat
 > e domínios reais foram trocados por placeholders.
 
+**Limite operacional:** Hermes, Ultron, seus perfis, Telegram e 9Router rodam
+inteiramente no notebook local (WSL Debian/Windows). A VPS `finaro-vps` não
+faz parte desta instalação e não deve ser usada para diagnosticar, implantar
+ou reiniciar o Ultron.
+
 ## Visão de 1 minuto
 
 Um único agente (**Hermes/Ultron**) roda 24/7 dentro do WSL do notebook. Você

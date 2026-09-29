@@ -1,5 +1,10 @@
 # Runbook — exatamente o que foi feito
 
+**Manutencao local de 29/09/2026:** veja
+[o diagnostico do Telegram e 9Router](docs/DIAGNOSTICO-LOCAL-2026-09-29.md).
+Referencias historicas a uma VPS nao definem onde o Hermes/Ultron roda hoje:
+o runtime do bot e exclusivamente local em Windows + WSL Debian.
+
 Registro passo a passo de todo o trabalho de diagnóstico, correção e
 documentação realizado neste projeto: cada comando usado e o que ele
 revelou. Serve como referência para reproduzir o setup do zero ou
