@@ -8,7 +8,7 @@ Nenhuma destas referencias concede acesso a contas ou autoriza gastos.
 
 | Projeto | Decisao para o Ultron | Limite |
 |---|---|---|
-| [marketingskills](https://github.com/coreyhaines31/marketingskills) | Adotar como referencia metodologica do Money: contexto do produto, pesquisa, copy, SEO, criativos, analytics e experimentos. | MIT; revisar cada skill antes de instalar. Nao importar automaticamente ferramentas, parceiros, credenciais nem a persona de seus prompts. |
+| [marketingskills](https://github.com/coreyhaines31/marketingskills) | Dez skills adaptadas e instaladas apenas no Money; [pacote e instalador](../agent/marketing/README.md). | MIT; sem ferramentas, parceiros, credenciais nem mudanca da personalidade. |
 | [public-apis](https://github.com/public-apis/public-apis) | Catalogo para descobrir provedores por tarefa. | Lista, nao conector. Conferir API oficial, precos, quota, termos e tratamento de dados de cada candidato. A licenca da lista nao licencia as APIs. |
 | [awesome](https://github.com/sindresorhus/awesome) | Indice para pesquisa tecnica sob demanda. | Nao carregar a lista inteira no prompt nem instalar seus links automaticamente. |
 | [Flowise](https://github.com/FlowiseAI/Flowise) | Apenas referencia de editor visual e composicao de fluxos. | O README e o campo `isArchived` do GitHub indicavam arquivamento nesta consulta. Nao adicionar como dependencia central nova; licencas de componentes tambem precisam de revisao. |
@@ -28,9 +28,10 @@ execucao literal. O catalogo tambem inclui integracoes patrocinadas declaradas.
 4. Ultron apresenta rascunhos. Publicar, enviar mensagens, conectar contas,
    alterar campanhas ou gastar exige autorizacao explicita e escopo definido.
 
-Pacote inicial recomendado: `product-marketing`, `customer-research`,
-`copywriting`, `seo-audit`, `ad-creative`, `analytics`, `ab-testing`.
-Isso e uma selecao para adaptacao, **nao uma declaracao de instalacao**.
+Pacote instalado: `product-marketing`, `customer-research`, `copywriting`,
+`content-strategy`, `social`, `seo-audit`, `ad-creative`, `ads`, `analytics`,
+`ab-testing`. A instalacao foi verificada com `hermes --profile money skills list`;
+o perfil Bigode nao recebeu essas skills.
 Nao existe garantia de renda passiva: medir receita recebida, custos, margem,
 tempo humano e cancelamentos por experimento antes de escalar.
 

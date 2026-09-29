@@ -108,6 +108,8 @@ o HermesDesktop não estourar o tempo (correção do `TimeoutError`).
 ## 4. Skills (`agent/skills/`)
 `analise-golpe`, `checar-noticia`, `homelab-ops`, `memoria-projetos`, `midia-gpu`
 — mais as skills do próprio Hermes (`conselho-sdd`, `frank-investigator`, etc.).
+O perfil Money recebe somente o subconjunto adaptado de
+[`marketingskills`](agent/marketing/README.md), sem conceder acesso a contas.
 
 ---
 

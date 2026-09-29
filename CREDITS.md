@@ -1,9 +1,9 @@
 # Créditos — projetos de terceiros usados no Ultron
 
 O que está em [TOOLS.md](TOOLS.md) é código **próprio** deste repositório. Este
-arquivo lista o que é **100% de terceiros**: para cada projeto, o link oficial e
-**para que o Ultron usa**. Nada aqui foi modificado e distribuído — são
-dependências ou serviços consultados; cada um mantém sua própria licença.
+arquivo lista o que é **de terceiros**: para cada projeto, o link oficial e
+**para que o Ultron usa**. A exceção distribuída é o subconjunto adaptado de
+`marketingskills`, com o aviso MIT preservado em `agent/marketing/marketingskills/LICENSE`.
 
 ## Núcleo do agente
 
@@ -45,6 +45,12 @@ dependências ou serviços consultados; cada um mantém sua própria licença.
 | **yfinance** (ranaroussi) | https://github.com/ranaroussi/yfinance | Cotação e dividendos de ações/FIIs/ETFs da B3. |
 | **Banco Central — SGS** | https://dadosabertos.bcb.gov.br/ | Selic, CDI, IPCA, IGP-M, dólar PTAX (oficial). |
 | **BrasilAPI** | https://github.com/BrasilAPI/BrasilAPI | Feriados, CNPJ, taxas, bancos. |
+
+## Marketing (Money)
+
+| Projeto | Link | Para que o Ultron usa |
+|---|---|---|
+| **marketingskills** (Corey Haines) | https://github.com/coreyhaines31/marketingskills | Dez skills de método para posicionamento, pesquisa, copy, conteúdo, SEO, redes sociais, anúncios, analytics e testes A/B. Snapshot e licença MIT em `agent/marketing/`. |
 
 ## Segurança e backup (Mr. Robot)
 

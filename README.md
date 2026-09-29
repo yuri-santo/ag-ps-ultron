@@ -21,6 +21,8 @@
 ## Comece por aqui
 
 **Dashboard financeiro reproduzivel:** [codigo e inicializacao com dados ficticios](finance-dashboard/README.md).
+**Marketing do Money:** [10 skills instalaveis com limites de acao](agent/marketing/README.md).
+**Revisao e triagem:** [fila priorizada e correcao no mesmo turno](agent/review/README.md).
 **Novas referencias avaliadas:** [marketing, catalogos de APIs e transcricao](docs/REPOSITORIOS-AVALIADOS-2026-09-28.md).
 **Audio do Desktop:** [causa do timeout, correcao e verificacao](docs/HERMES-DESKTOP-AUDIO.md).
 
@@ -51,7 +53,8 @@ O guia diferencia demonstração executável, dependências externas e partes au
 - **Conversa** por Telegram, e-mail, voz (HermesDesktop) e Stream Deck — tudo o
   **mesmo** agente, rodando no WSL do notebook.
 - **Escolhe o modelo** por um gateway próprio (9Router → Gemini/Claude/GPT-OSS/OpenRouter).
-- **Revisa toda resposta** com um revisor independente antes de entregar.
+- **Revisa respostas substantivas** com um revisor independente antes de entregar;
+  saudacoes sociais isoladas passam por triagem deterministica.
 - **Convoca um time** de especialistas (jurídico, finanças, SAP, dev, saúde,
   segurança…) por um conselho, com verificação de fatos (Frank).
 - **Jurídico de verdade** (Harvey): lei pelo Vade Mecum + Planalto, processos no

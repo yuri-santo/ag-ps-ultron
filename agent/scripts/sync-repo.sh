@@ -34,7 +34,6 @@ SOURCES=(
   "$H/plugins/ultron_local::agent/plugins/ultron_local"
   "$H/plugins/meeting_copilot::agent/plugins/meeting_copilot"
   "$H/plugins/a_team_workflow::agent/plugins/a_team_workflow"
-  "/root/ultron-local/review::agent/review"
   "/root/ultron-local/meeting::agent/meeting"
   "/root/ultron-local/stt::agent/stt"
   "/root/ultron-local/security::agent/security"
@@ -82,6 +81,12 @@ for pair in "${SOURCES[@]}"; do
   [[ -e "$src" ]] || { warn "ausente: $src"; continue; }
   mkdir -p "$STAGE/$dst"; rsync -a "${EXCLUDES[@]}" "$src"/ "$STAGE/$dst"/; echo "  ✓ $dst"
 done
+
+# A revisao vive em dois lugares no Hermes atual. Atualiza apenas esses arquivos;
+# testes e patches versionados em agent/review continuam preservados.
+mkdir -p "$STAGE/agent/review"
+cp -a /root/ultron-local/model_review.py "$STAGE/agent/review/model_review.py"
+cp -a /opt/hermes-agent-20260924/agent/ultron_review_gate.py "$STAGE/agent/review/ultron_review_gate.py"
 
 # 1b) /root/tools: só código, sem dado/segredo, sem seeders pessoais
 say "1b  varrendo tools (só código)"
@@ -163,12 +168,13 @@ echo "  ✓ nada sensível encontrado"
 say "5  publicando"
 export GIT_SSH_COMMAND="ssh -F $SSH_CONFIG"; rm -rf "$CLONE"
 git clone --depth 1 "$REPO_SSH" "$CLONE"
-for d in agent/plugins agent/review agent/meeting agent/stt agent/security \
+for d in agent/plugins agent/meeting agent/stt agent/security \
          agent/juridico agent/homelab agent/skills agent/scripts agent/tools \
          agent/profiles agent/db-schemas panel; do
   [[ -d "$STAGE/$d" ]] || continue
   rm -rf "${CLONE:?}/$d"; mkdir -p "$(dirname "$CLONE/$d")"; cp -a "$STAGE/$d" "$CLONE/$d"
 done
+rsync -a "$STAGE/agent/review/" "$CLONE/agent/review/"
 cd "$CLONE"; git add -A
 if git diff --cached --quiet; then echo "  ✓ nada mudou"; exit 0; fi
 git -c user.name='Ultron' -c user.email='ultron@localhost' commit -m "sync: retrato completo $(date '+%F %H:%M')"

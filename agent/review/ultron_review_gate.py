@@ -53,6 +53,7 @@ def producer(agent):
 
 def is_cron(agent):
     if getattr(agent, "is_cron", False): return True
+    if str(getattr(agent, "platform", "") or "") == "cron": return True
     sid = str(getattr(agent, "session_id", "") or "")
     if sid.startswith("cron_"): return True
     return False
@@ -82,7 +83,7 @@ def clean_request(raw):
 _REVIEW_SYNTHETIC_FLAGS = (
     '_compressed_summary', '_empty_recovery_synthetic', '_empty_terminal_sentinel',
     '_thinking_prefill', '_verification_stop_synthetic', '_pre_verify_synthetic',
-    '_kanban_stop_synthetic', '_dropped_toolcall_nudge',
+    '_kanban_stop_synthetic', '_dropped_toolcall_nudge', '_review_stop_synthetic',
 )
 
 def task_review_request(messages, fallback=''):
@@ -134,44 +135,77 @@ def task_review_request(messages, fallback=''):
     return redact(request)[:4000]
 
 
-# Explicação em português para os códigos do broker; o código original continua entre parênteses.
-_MOTIVOS = {
-    'reviewer_unavailable_or_invalid': 'o revisor não devolveu um parecer válido nem depois de tentar de novo; peça outra vez em alguns minutos',
-    'review_capacity_busy': 'outra revisão estava em andamento',
-    'no_eligible_stronger_non_google_reviewer': 'nenhum revisor mais forte está disponível agora',
-    'task_budget_exhausted': 'a revisão desta resposta atingiu o limite de chamadas',
-    'input_limit_partition_task': 'a resposta ficou grande demais para revisar de uma vez; peça em partes',
-    'revision_limit_reached': 'a resposta já foi corrigida o máximo de vezes permitido',
-    'review_unavailable': 'o serviço de revisão falhou ao iniciar',
-}
+_SOCIAL_REPLIES = (
+    (r'(?:oi|ol[aá]|e a[ií])', 'Oi! Como posso ajudar?'),
+    (r'(?:bom dia|boa tarde|boa noite)', None),
+    (r'(?:tudo bem(?: com voc[eê])?|como (?:voc[eê] )?est[aá]|como vai voc[eê])',
+     'Tudo bem por aqui. E com você?'),
+    (r'(?:obrigad[oa]|valeu)', 'Por nada!'),
+)
+
+
+def triage_request(request):
+    """Only standalone social utterances skip a network review."""
+    normalized = re.sub(r'\s+', ' ', str(request or '').strip().lower())
+    normalized = normalized.strip(' \t\r\n!?.,')
+    return 'social' if any(re.fullmatch(pattern, normalized) for pattern, _ in _SOCIAL_REPLIES) else 'review'
+
+
+def social_response(request, candidate):
+    normalized = re.sub(r'\s+', ' ', str(request or '').strip().lower()).strip(' \t\r\n!?.,')
+    fallback = next((reply or normalized.capitalize() + '! Como posso ajudar?'
+                     for pattern, reply in _SOCIAL_REPLIES if re.fullmatch(pattern, normalized)),
+                    'Oi! Como posso ajudar?')
+    text = str(candidate or '').strip()
+    if (not text or len(text) > 500 or re.search(
+            r'(?i)revis[aã]o conclu[ií]da|nenhuma pend[eê]ncia|resposta ainda n[aã]o foi liberada|independent_review',
+            text)):
+        return fallback
+    return text
 
 
 def review_final(agent,text,turn_id):
     previous=getattr(agent,'_ultron_review_verdict',None)
     if previous and previous.get('turn_id')==turn_id:return previous['visible_text']
+    messages = getattr(agent, "_ultron_review_messages", [])
+    raw_req = task_review_request(messages, getattr(agent, "_ultron_review_request", ""))
+    if is_cron(agent) and getattr(agent, '_ultron_cron_task', None):
+        raw_req = redact(agent._ultron_cron_task)[:4000]
+    if not is_cron(agent) and triage_request(raw_req) == 'social' and not tool_evidence(messages):
+        visible = social_response(raw_req, text)
+        agent._ultron_review_verdict = {'turn_id': turn_id, 'status': 'not_required',
+                                        'completed': True, 'reason': 'standalone_social_turn',
+                                        'visible_text': visible}
+        return visible
     if not hold_output(agent):return text
     try:
-        messages = getattr(agent, "_ultron_review_messages", [])
-        raw_req = task_review_request(messages, getattr(agent, "_ultron_review_request", ""))
+        evidence = tool_evidence(messages)
+        if is_cron(agent):
+            evidence += [item for item in (getattr(agent, '_ultron_cron_evidence', None) or [])
+                         if isinstance(item, dict)][:8]
         record=broker().review_output(task_id=turn_id,producer=producer(agent),output=text,
             request=redact(raw_req)[:4000],
-            evidence=tool_evidence(messages),task_kind='answer',
+            evidence=evidence,task_kind='answer',
             context={'delivery_mode': 'scheduled' if is_cron(agent) else 'interactive'})
     except Exception as exc:
         record={'status':'pending_review','completed':False,'reason':'review_unavailable:'+type(exc).__name__}
     visible = text
     if record.get('completed') is not True:
-        reason = record.get('reason', 'revisao pendente')
-        issues = [str(issue) for review in record.get('reviews', [])
-                  for issue in review.get('verdict', {}).get('issues', [])]
-        visible = ('A resposta ainda não foi liberada pela revisão. Motivo: ' + _MOTIVOS.get(reason.split(':')[0], reason)
-                   + (' (' + reason + ').' if reason in _MOTIVOS or reason.split(':')[0] in _MOTIVOS else '.'))
-        if issues:
-            visible += '\nCorreções solicitadas: ' + redact('; '.join(dict.fromkeys(issues)))[:1000]
-        elif reason == 'review_capacity_busy':
-            visible += ' O revisor permaneceu ocupado durante o tempo de espera; nenhuma aprovação foi presumida.'
+        visible = 'Não consegui concluir a revisão desta resposta. A entrega ainda não está pronta; tente novamente em instantes.'
     agent._ultron_review_verdict={**record,'turn_id':turn_id,'visible_text':visible}
     return visible
+
+
+def review_stop_feedback(agent, text, messages, turn_id):
+    """Review before persistence and return reviewer findings only to the agent loop."""
+    agent._ultron_review_messages = messages
+    review_final(agent, text, turn_id)
+    verdict = getattr(agent, '_ultron_review_verdict', None) or {}
+    if verdict.get('status') != 'revision_required':
+        return None
+    issues = [str(issue) for review in verdict.get('reviews', [])
+              for issue in review.get('verdict', {}).get('issues', [])]
+    return redact('; '.join(dict.fromkeys(issues)))[:1500] or 'A resposta não atende ao pedido original.'
 
 def completion_allowed(agent):
     verdict=getattr(agent,'_ultron_review_verdict',None)

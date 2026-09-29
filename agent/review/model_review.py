@@ -17,6 +17,7 @@ import sqlite3
 import time
 import urllib.error
 import urllib.request
+import uuid
 
 ROOT = Path('/root/ultron-local')
 DB = Path('/root/ultron-backup/.9router/db/data.sqlite')
@@ -116,6 +117,27 @@ def _write_json(path, value):
     os.replace(temporary, path)
 
 
+def next_review_ticket(queue_dir, check_liveness=True):
+    """Return the next live ticket; interactive turns precede scheduled work."""
+    candidates = []
+    for path in Path(queue_dir).glob('*.json'):
+        try:
+            ticket = json.loads(path.read_text())
+            pid = int(ticket['pid'])
+            if check_liveness:
+                try:
+                    os.kill(pid, 0)
+                except (ProcessLookupError, ValueError):
+                    continue
+                except PermissionError:
+                    pass
+            candidates.append((ticket.get('delivery_mode') != 'interactive',
+                               float(ticket['created_at']), path.stem))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    return min(candidates)[2] if candidates else None
+
+
 def validate(output, evidence, task_kind):
     issues = []
     if not isinstance(output, str) or not output.strip():
@@ -198,18 +220,35 @@ class Broker:
         fingerprint = _digest(json.dumps([producer, output, request, evidence, task_kind, runtime_context], ensure_ascii=False, sort_keys=True))
         path = self.state_dir/(_digest(str(task_id)) + '.json')
         self.state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        queue_dir = self.state_dir/'queue'
+        queue_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        ticket_id = uuid.uuid4().hex
+        ticket_path = queue_dir/(ticket_id + '.json')
+        _write_json(ticket_path, {'pid': os.getpid(), 'created_at': time.time(),
+                                  'delivery_mode': runtime_context['delivery_mode'],
+                                  'task_hash': _digest(str(task_id))})
+        queue_fd = os.open(queue_dir/'queue.lock', os.O_CREAT | os.O_RDWR, 0o600)
         lock_fd = os.open(self.state_dir/'review.lock', os.O_CREAT | os.O_RDWR, 0o600)
         try:
             deadline = time.monotonic() + max(0, min(120, float(self.policy.get('capacity_wait_seconds', 45))))
             while True:
+                fcntl.flock(queue_fd, fcntl.LOCK_EX)
                 try:
-                    fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    break
-                except BlockingIOError:
-                    remaining = deadline - time.monotonic()
-                    if remaining <= 0:
-                        return {'status': 'pending_review', 'completed': False, 'reason': 'review_capacity_busy', 'producer': info, 'record_path': str(path)}
-                    time.sleep(min(.1, remaining))
+                    selected = next_review_ticket(queue_dir) == ticket_id
+                    if selected:
+                        try:
+                            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        except BlockingIOError:
+                            selected = False
+                    if selected:
+                        ticket_path.unlink(missing_ok=True)
+                        break
+                finally:
+                    fcntl.flock(queue_fd, fcntl.LOCK_UN)
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return {'status': 'pending_review', 'completed': False, 'reason': 'review_capacity_busy', 'producer': info, 'record_path': str(path)}
+                time.sleep(min(.1, remaining))
             previous = json.loads(path.read_text()) if path.exists() else {}
             if previous.get('fingerprint') == fingerprint and (previous.get('completed') or not retry):
                 return previous
@@ -314,6 +353,12 @@ class Broker:
                 pass_number += 1
             return finish('approved', 'validated_and_independently_reviewed')
         finally:
+            fcntl.flock(queue_fd, fcntl.LOCK_EX)
+            try:
+                ticket_path.unlink(missing_ok=True)
+            finally:
+                fcntl.flock(queue_fd, fcntl.LOCK_UN)
+                os.close(queue_fd)
             os.close(lock_fd)
 
 
