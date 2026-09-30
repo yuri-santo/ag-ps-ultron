@@ -25,6 +25,8 @@
 **Revisao e triagem:** [fila priorizada e correcao no mesmo turno](agent/review/README.md).
 **Novas referencias avaliadas:** [marketing, catalogos de APIs e transcricao](docs/REPOSITORIOS-AVALIADOS-2026-09-28.md).
 **Audio do Desktop:** [causa do timeout, correcao e verificacao](docs/HERMES-DESKTOP-AUDIO.md).
+**Video e automacao:** [qualidade do MP4 e integracao local](agent/video/README.md),
+[analise dos sete repositorios](docs/REPOS-VIDEO-AUTOMACAO-2026-09-30.md).
 
 **Recriar em outra máquina:** comece por [RECRIAR-ULTRON.md](docs/RECRIAR-ULTRON.md).
 O clone ainda não inclui todos os conectores e componentes da instalação pessoal.
