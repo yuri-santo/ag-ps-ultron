@@ -35,3 +35,13 @@ e outbox continuam trabalho separado, nao implementado por este modulo.
 Testes: `python -m unittest discover -s agent/context -v` no Linux/WSL.
 No runtime local, os quatro scripts passaram tambem pelo executor e parser
 reais do cron. Sem interesses: wake false; imoveis com pedido valido: true.
+
+## Sessao NotebookLM
+
+`notebooklm_keepalive.py` e o payload sem modelo do job nativo existente,
+mantendo 30 minutos. Usa o perfil default explicitamente, ignora auth JSON
+herdado, nao copia cookies de outra maquina e nao registra saida do provedor.
+Arquivo privado de saude usa lock, escrita atomica e modo 600. Sucesso regular
+nao entrega mensagem; somente transicao de falha/recuperacao e notificada.
+Tres testes cobrem silencio, permissoes, timeout e ausencia de segredos.
+O Cookie Sync legado deve continuar desativado para nao sobrescrever o login.

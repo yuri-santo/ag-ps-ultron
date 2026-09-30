@@ -26,15 +26,30 @@ com mock, verificando PDF/TXT/Word. Pagina de transcricao renderizada e inspecio
 PhoneHarness: 11 testes upstream offline e 6 testes do launcher. Nao houve
 publicacao, compra, reserva, mudanca de SOUL ou acesso a VPS.
 
+## Autenticacao Restabelecida
+
+Depois desta entrega, o login interativo nativo autenticou o NotebookLM local:
+auth check --test retornou status ok e token_fetch true; list --json funcionou.
+O CLI esta no PATH. O job existente Auth Keepalive foi corrigido para o caminho
+local atual e script nativo sem modelo, mantendo intervalo de 30 minutos.
+Sucesso normal e silencioso; falha e recuperacao notificam apenas transicoes.
+O antigo Cookie Sync continua desativado, para nao sobrescrever a sessao valida.
+
+Cookies Seller fornecidos pelo titular foram verificados por consulta real e
+instalados privadamente. Catalogo local atualizado com 100 oportunidades, sem
+publicar ou alterar vitrine. Sessao de publicacao do criador foi preservada.
+Credenciais e conteudo dos cadernos nao foram incluidos no Git.
+
 ## Limites Pendentes
 
-- NotebookLM nao possui estado autenticado no runtime local verificado. Exige
-  login real; nao importar cookies de outras maquinas nem chamar isso de treino.
+- NotebookLM agora autenticado; adicionar livros exige arquivos/fontes
+  indicados pelo titular. Ingestao e referencia, nao treino do modelo.
 - PhoneHarness upstream referencia helpers ADB ausentes e proxy sem auth.
   Instalacao nao equivale a controle autonomo do Android; somente ADB USB foi
   validado. A configuracao do Deck no aparelho ainda nao foi alterada.
-- Vitrine TikTok Shop ainda precisa de sessao/coleta autenticada, identificacao
-  exata dos SKUs e recibos. Esta entrega nao atualizou a vitrine nem publicou.
+- Seller ja permite coleta autenticada, mas alteracao da vitrine ainda exige
+  identificacao da conta/fluxo correto, SKUs, elegibilidade e recibos. Esta
+  entrega nao atualizou a vitrine nem publicou.
 - Novos videos sem evidencias reais serao bloqueados; preencher um manifesto
   ficticio nao substitui visao, escuta e verificacao comercial.
 - Nao foi medida nova precisao ASR com audio real. A auditoria identificou que
