@@ -35,6 +35,13 @@ Nenhum endpoint de webhook ou extensao de navegador e instalado automaticamente.
 
 ## Entrega
 
+A transcricao integral no PDF preserva caracteres literais (`#`, `**`, crases
+e marcadores), sem interpreta-los como Markdown. `patch_transcript_email.py`
+adiciona o TXT existente aos anexos do envio nativo, mantendo PDF e Word.
+Teste de integridade em `test_report_integrity.py`; teste SMTP simulado local
+confirmou os tres anexos sem enviar mensagem real. Estas correcoes nao
+retranscrevem gravacoes antigas nem medem nova precisao do reconhecimento.
+
 PDF e Word usam o mesmo `build_minutes`: resumo extrativo inicial, qualidade,
 decisoes, encaminhamentos, pendencias, transcricao e indice de referencias.
 O ID completo continua no indice; a tabela usa F001 etc.

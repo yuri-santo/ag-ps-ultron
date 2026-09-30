@@ -52,6 +52,10 @@ O guia diferencia demonstração executável, dependências externas e partes au
 | **[docs/](docs/)** | Notas de evolução (ferramentas adotadas do GitHub, changelog do ultron_lab). |
 
 ## O que o sistema faz
+
+Estado e limites da ultima entrega:
+[autonomia contextual, evidencias de produto e Android](docs/AUTONOMIA-CONTEXTUAL-2026-09-30.md).
+
 - **Conversa** por Telegram, e-mail, voz (HermesDesktop) e Stream Deck — tudo o
   **mesmo** agente, rodando no WSL do notebook.
 - **Escolhe o modelo** por um gateway próprio (9Router → Gemini/Claude/GPT-OSS/OpenRouter).

@@ -24,11 +24,14 @@ class NativeRenderTests(unittest.TestCase):
         campaign = {'stage': 'generated', 'artifact': {'path': str(video)}}
         with patch.object(affiliate_guard, 'validate_bundle', return_value=(brief, campaign, output, {})), \
                 patch.object(affiliate_guard, 'validate_trends'), \
+                patch.object(affiliate_guard, 'require_product_identity', return_value={
+                    'artifacts': [{'path': str(output / 'product-identity.json')}]}), \
                 patch.object(affiliate_guard, 'require_review_artifacts') as require, \
                 patch.object(affiliate_dispatch, 'slot_at', return_value='fixture-slot'):
             affiliate_guard.publication_guard('/tmp/brief.json', video, 'Synthetic', 'test-account',
                                               {'review_task_id': 'fixture-final'})
         self.assertIn(output / 'media-preflight.json', require.call_args_list[0].args[1])
+        self.assertIn(str(output / 'product-identity.json'), require.call_args_list[-1].args[1])
 
     def test_real_ffmpeg_render_keeps_preflight_and_audio_envelopes(self):
         root = Path('/root/tools/tiktok')

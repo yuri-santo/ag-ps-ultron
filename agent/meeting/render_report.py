@@ -328,11 +328,14 @@ def render(data, destination):
         p(f"Gerado por: Ultron · Revisão: ______________________ · Sessão {e(ata['sessao'])}", small),
         Spacer(1, 9 * mm), assinatura]))
 
-    def texto(title, text, style=body):
+    def texto(title, text, style=body, markdown=True):
         parts.append(p(e(title), heading))
         lines = [piece for line in (text or '').split('\n')
                  for piece in ([line[i:i + 1500] for i in range(0, len(line), 1500)] or [''])]
         for line in lines:
+            if not markdown:
+                parts.append(p(e(line) or '&#160;', style))
+                continue
             clean = line.strip()
             if clean.startswith('#'):
                 parts.append(p(e(clean.lstrip('#').strip()), sub))
@@ -347,19 +350,19 @@ def render(data, destination):
     parts.append(PageBreak())
     texto('Anexo I — Análise executiva da reunião', ata['report_text'] or 'Análise indisponível.')
     parts.append(PageBreak())
-    texto('Anexo II — Transcrição integral (horários e origem do áudio)', ata['transcript'] or '[Nenhuma fala transcrita]', mono)
+    texto('Anexo II — Transcrição integral (horários e origem do áudio)', ata['transcript'] or '[Nenhuma fala transcrita]', mono, markdown=False)
     parts.append(PageBreak())
     texto('Índice de referências das falas', '\n'.join(
-        f'{label} = {tid}' for tid, label in ata['citation_labels'].items()), mono)
+        f'{label} = {tid}' for tid, label in ata['citation_labels'].items()), mono, markdown=False)
     if ata['relatorios'].strip():
         texto('Contexto consultado — documentos externos à reunião', ata['relatorios'])
     if data.get('include_internal_evidence'):
         if data.get('sources'):
             texto('Anexo III — Referências internas usadas na análise',
-                  json.dumps(data['sources'], ensure_ascii=False, indent=2), mono)
+                  json.dumps(data['sources'], ensure_ascii=False, indent=2), mono, markdown=False)
         if data.get('full_record'):
             parts.append(PageBreak())
-            texto('Registro interno: falas, análises e mensagens privadas', data['full_record'], mono)
+            texto('Registro interno: falas, análises e mensagens privadas', data['full_record'], mono, markdown=False)
 
     width, height = A4
 
