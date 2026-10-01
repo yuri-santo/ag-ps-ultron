@@ -1,8 +1,10 @@
 # Admissao duravel por assunto
 
-**Fundacao nao instalada no gateway.** Os testes sao offline. Este modulo nao
-altera o Telegram, nao executa ferramentas e nao envia mensagens. A triagem so
-chama um modelo quando o host invoca explicitamente `NativeCompletion`.
+**Conectada e ativada no gateway local em 01/10/2026**, somente para texto simples
+no DM autorizado do titular. `runtime.py` liga os componentes ao Kanban nativo,
+workers restritos, revisores reais e outbox Telegram. Os testes automatizados
+continuam isolados, sem enviar mensagens reais. Consulte escopo, limites,
+evidencias e reversao no [guia operacional](../../docs/GATEWAY-POR-ASSUNTO.md).
 Segue o [desenho aprovado](../../docs/superpowers/specs/2026-09-29-topic-queue-design.md).
 
 ## Implementado
@@ -65,16 +67,20 @@ e contrato), inclusive quando um predecessor invalida o assunto sem mudar seu
 numero de versao. Um contexto ja invalido e estavel pode ser replanejado;
 dependencias necessarias precisam estar representadas no novo plano.
 
-## Ainda Nao Implementado
+## Integracao operacional
 
-Adapter pos-autorizacao e anterior ao FIFO/agrupamento ocupado; veto pre-transicao;
-leitores de aprovacao e recibos ligados ao runtime real; transporte Telegram,
-pausa/cancelamento e recuperacao end-to-end. Nao ha worker de admissao/triagem/card
-ligado ao gateway; estas APIs sao componentes, nao uma fila operacional nova.
+`gateway_adapter.py` admite apos autorizacao, antes do agrupamento nativo.
+`native_guard.py` exige aprovacao antes de completar e impede reescrita de cards
+gerenciados. `worker_host.py` usa claims/processos do Kanban; `specialist.py`
+preserva o worker restrito e captura o modelo servido. `reviewer.py` valida o
+texto congelado por dominio e auditoria. `native_patch.py` fixa cinco fontes
+auditadas, inclusive supressao do notificador duplicado. `manage_gateway.py`
+oferece refresh, ativacao/desativacao e rollback por checksum.
 
-Nao habilitar processamento com base apenas nesta suite. O aceite final precisa
-provar A lento/B rapido, dependencia por versao aprovada, falha de provedor,
-queda antes/depois do envio e ausencia de entrega duplicada ou sem validacao.
+Validacao do pacote: 264 testes aprovados, 1 pulado. Probe real pelo despachante
+nativo terminou com triagem e especialista `done`, dois pareceres e uma
+aprovacao. Nao foi enviado teste ao Telegram; a entrega real ao titular ainda
+depende da proxima interacao. Os testes de transporte usam doubles do Telegram.
 
 ## Aprovacao e envio preparados
 

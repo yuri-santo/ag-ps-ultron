@@ -114,6 +114,9 @@ O plugin `ultron_adoption` acrescenta ferramentas sem mudar SOULs:
 
 Vitrine TikTok Shop esta bloqueada pelo titular; nao habilitar nem cadastrar.
 Maestro CLI instalado e PhoneHarness offline nao significam controle autonomo
-do Android. A nova fila por assunto permanece componente em validacao, ainda
-sem ingresso/transporte conectado ao gateway. Ver a
+do Android. A fila por assunto foi conectada e ativada no DM autorizado do
+titular em 01/10/2026: texto simples, Kanban nativo, revisao por dominio e
+auditoria independente, outbox com recibos. Midia/comandos e replies antigos
+desconhecidos permanecem no fluxo nativo. Ver o
+[guia do gateway](docs/GATEWAY-POR-ASSUNTO.md) e a
 [matriz atual](docs/INTEGRACOES-2026-10-01.md) antes de declarar uma integracao ativa.

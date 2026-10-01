@@ -83,7 +83,7 @@ agent/
   security/       auditoria (Lynis/Trivy/Gitleaks) e backup (restic)
   audit/          SkillSpector isolado para auditoria estatica de skills
   integrations/   ferramentas nativas por perfil e importacao de legendas
-  topic_queue/    fundacao privada de triagem, aprovacao e entrega (nao ativada)
+  topic_queue/    fila local por assunto, comite, Kanban nativo e outbox aprovado
   phone/          PhoneHarness offline e Maestro CLI fixado
   homelab/        stacks docker + inventário
   skills/         SKILL.md

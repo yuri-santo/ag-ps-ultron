@@ -218,7 +218,11 @@ def test_archived_native_card_is_never_recreated(store, native, linked):
         with store._transaction() as db:
             db.execute('DELETE FROM card_links')
     with native.connection.connect_closing(native.path) as conn:
-        assert native.kb.archive_task(conn, card_id)
+        # Simulate a legacy archived row, even on a runtime with the new guard.
+        archive = native.kb.archive_task
+        while hasattr(archive, '__wrapped__'):
+            archive = archive.__wrapped__
+        assert archive(conn, card_id)
     with pytest.raises(QueueError, match='archived|parked'):
         adapter(store, native).reconcile(SCOPE, **revision)
     assert len(cards(native)) == 1

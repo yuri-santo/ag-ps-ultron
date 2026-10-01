@@ -35,7 +35,7 @@ class NativeCards:
             idempotency_key='topic-queue:' + intent['correlation'],
         )
 
-    def _find(self, conn, intent, scope_key):
+    def _find(self, conn, intent, scope_key, *, parent=False):
         expected = self._identity(intent, scope_key)
         # Native create_task ignores archived matches and performs this lookup
         # before its own transaction. Our caller holds an outer write lock.
@@ -49,6 +49,12 @@ class NativeCards:
         require(intent['native_card_id'] in (None, card['id']), 'Conflicting native card binding')
         require(all(card[name] == value for name, value in expected.items()),
                 'Native card does not match durable intent')
+        if parent:
+            require(intent['native_card_id'] == card['id'] and card['status'] != 'archived',
+                    'Dependency binding is missing or archived')
+            require(conn.execute('SELECT 1 FROM kanban_notify_subs WHERE task_id=? LIMIT 1',
+                                 (card['id'],)).fetchone() is None, 'Dependency has a subscription')
+            return card['id']
         require(card['status'] == 'blocked', 'Native card is not parked or was archived')
         require(all(card[name] is None for name in (
             'assignee', 'session_id', 'claim_lock', 'claim_expires', 'worker_pid',
@@ -76,7 +82,7 @@ class NativeCards:
                 with self.write_txn(conn):
                     parents = []
                     for parent in dependencies:
-                        parent_id = self._find(conn, parent, scope_key)
+                        parent_id = self._find(conn, parent, scope_key, parent=True)
                         require(parent_id is not None, 'Dependency native card is missing')
                         parents.append(parent_id)
                     card_id = self._find(conn, intent, scope_key)

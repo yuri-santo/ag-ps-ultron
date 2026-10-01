@@ -70,18 +70,21 @@ foi marcado manualmente como concluido, e nenhum recibo de publicacao foi criado
 
 ## Fila por assunto
 
-Aprovacao/outbox implementados e testados em base temporaria, **nao ligados ao
-gateway**. Preparacao prende versao, card, autor real, candidato e texto final;
+Fila **conectada e ativada no gateway local** em 01/10/2026 para texto simples
+no DM autorizado do titular. Preparacao prende versao, card, autor real, candidato e texto final;
 revisao competente e independente precede envio. Intent e receipt por parte,
 recuperacao de crash e reconciliacao nao aceitam um booleano do modelo como
 prova. Um assunto incerto nao e reenviado; outros independentes podem seguir
 quando nao ha grupo multipart incompleto a preservar.
 
-Faltam ingresso autenticado anterior ao agrupamento/FIFO, vinculo dos leitores
-com evidencias nativas, veto de transicoes Kanban em todos os caminhos, transporte
-Telegram real e aceite end-to-end. Nao alterar o gateway apenas porque testes
-de componentes passaram. O worker recebe metadados verificaveis, mas isso por
-si so nao habilita a nova fila ou comprova consenso do comite.
+Ingresso autenticado anterior ao agrupamento, leitores de evidencias do host,
+guard de conclusao, transporte nativo e supressao de notificacoes duplicadas
+instalados com backup. Probe real pelo despachante/subprocessos do Hermes
+concluiu triagem e resposta com revisao e aprovacao, sem enviar ao Telegram.
+Reinicio conferido: Telegram, e-mail e Home Assistant conectados. Midia,
+comandos, controles e replies antigos desconhecidos seguem pelo fluxo nativo.
+Ver limites de provedores, operacao e rollback no
+[guia do gateway](GATEWAY-POR-ASSUNTO.md). Nao houve teste de entrega na conta real.
 
 ## Verificacao e privacidade
 
@@ -90,7 +93,7 @@ backup/rollback, edicao concorrente, erro do systemctl, scanner offline e
 umask restritiva. Nenhuma mensagem real, produto, compra ou postagem foi criada
 para testar. Contas, SOULs, transcricoes reais, cookies e backups ficam privados.
 
-Regressao final: 360 testes e 163 subtestes aprovados, 7 testes pulados por condicoes
+Regressao final com gateway: 434 testes e 163 subtestes aprovados, 7 testes pulados por condicoes
 de ambiente/opt-in. Adicionalmente, 18 testes do worker passaram com fonte
 instalada em copia temporaria. Nao foi possivel executar Ruff: ausente no venv
 Hermes. Revisao independente encontrou defeitos corrigidos com testes; sua
