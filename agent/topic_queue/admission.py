@@ -42,6 +42,10 @@ SCHEMA = (
     'CREATE TABLE IF NOT EXISTS card_intents ('
     'topic_id TEXT NOT NULL, version INTEGER NOT NULL, correlation TEXT UNIQUE NOT NULL, '
     'PRIMARY KEY(topic_id, version), FOREIGN KEY(topic_id, version) REFERENCES versions(topic_id, version))',
+    'CREATE TABLE IF NOT EXISTS card_links ('
+    'topic_id TEXT NOT NULL, version INTEGER NOT NULL, native_board TEXT NOT NULL, native_card_id TEXT, '
+    'PRIMARY KEY(topic_id, version), UNIQUE(native_board, native_card_id), '
+    'FOREIGN KEY(topic_id, version) REFERENCES card_intents(topic_id, version))',
     'CREATE TABLE IF NOT EXISTS delivery_references ('
     'scope TEXT NOT NULL, message_id TEXT NOT NULL, topic_id TEXT NOT NULL, version INTEGER NOT NULL, '
     'PRIMARY KEY(scope, message_id), FOREIGN KEY(topic_id, version) REFERENCES versions(topic_id, version))',
@@ -73,11 +77,11 @@ class TopicStore:
             db.execute('PRAGMA foreign_keys=ON')
             db.execute('PRAGMA synchronous=FULL')
             db.execute('BEGIN IMMEDIATE')
-            require(db.execute('PRAGMA user_version').fetchone()[0] in (0, 1),
+            require(db.execute('PRAGMA user_version').fetchone()[0] in (0, 1, 2),
                     'Unsupported private storage schema')
             for statement in SCHEMA:
                 db.execute(statement)
-            db.execute('PRAGMA user_version=1')
+            db.execute('PRAGMA user_version=2')
             yield db
             db.commit()
         except (OSError, sqlite3.Error) as exc:
@@ -142,12 +146,19 @@ class TopicStore:
         topic = self.get_topic(scope, topic_id)
         return type(version) is int and topic['current_version'] == version and topic['valid']
 
-    def apply_plan(self, scope, ingress_id, value):
-        """Validate and atomically persist a proposal; no native task is released."""
+    def apply_plan(self, scope, ingress_id, value, *, context_snapshot=None):
+        """Persist a proposal only while its optional model context is unchanged.
+
+        A stable invalid revision can be explicitly replanned. The snapshot is
+        an optimistic concurrency precondition, not approval of that revision.
+        No native task is released.
+        """
         origin = scope.key()
         encoded = canonical(value)
         # Snapshot model-owned input before validation to prevent caller mutation races.
         value = json.loads(encoded)
+        snapshot = json.loads(canonical(context_snapshot))
+        require(snapshot is None or isinstance(snapshot, dict), 'Invalid context snapshot')
         with self._transaction() as db:
             ingress = db.execute('SELECT * FROM ingress WHERE id=? AND scope=?',
                                  (ingress_id, origin)).fetchone()
@@ -155,6 +166,17 @@ class TopicStore:
             if ingress['plan'] is not None:
                 require(ingress['plan'] == encoded, 'Ingress already has a different accepted plan')
                 return json.loads(ingress['result'])
+            for topic_id, expected in (snapshot or {}).items():
+                require(nonempty(topic_id) and isinstance(expected, dict)
+                        and set(expected) == {'version', 'valid', 'contract'},
+                        'Invalid context snapshot entry')
+                require(type(expected['version']) is int and expected['version'] > 0
+                        and type(expected['valid']) is bool
+                        and isinstance(expected['contract'], dict), 'Invalid context snapshot entry')
+                current = self._topic(db, origin, topic_id)
+                actual = dict(version=current['current_version'], valid=bool(current['valid']),
+                              contract=json.loads(current['contract']))
+                require(canonical(actual) == canonical(expected), 'Stale topic context snapshot')
             payload = json.loads(ingress['payload'])
             validate_plan(value, payload['text'], payload['request_spans'], self.allowed_profiles)
             if payload['reply_to'] is not None:
@@ -219,10 +241,58 @@ class TopicStore:
 
     def card_intents(self, scope):
         with self._transaction() as db:
-            rows = db.execute('SELECT i.*, v.valid FROM card_intents i JOIN topics t ON t.id=i.topic_id '
+            rows = db.execute('SELECT i.*, v.valid, l.native_card_id, l.native_board '
+                              'FROM card_intents i JOIN topics t ON t.id=i.topic_id '
                               'JOIN versions v ON v.topic_id=i.topic_id AND v.version=i.version '
+                              'LEFT JOIN card_links l ON l.topic_id=i.topic_id AND l.version=i.version '
                               'WHERE t.scope=? ORDER BY i.rowid', (scope.key(),)).fetchall()
-            result = [dict(row, valid=bool(row['valid']), native_card_id=None, released=False) for row in rows]
+            result = [dict(row, valid=bool(row['valid']), released=False) for row in rows]
+        return result
+
+    def _card_revision(self, db, origin, topic_id, version):
+        require(type(version) is int and version > 0, 'Invalid card version')
+        current = self._topic(db, origin, topic_id)
+        require(current['current_version'] == version and current['valid'],
+                'Card revision is not current and valid')
+        row = db.execute('SELECT i.*, l.native_card_id, l.native_board FROM card_intents i '
+                         'LEFT JOIN card_links l ON l.topic_id=i.topic_id AND l.version=i.version '
+                         'WHERE i.topic_id=? AND i.version=?', (topic_id, version)).fetchone()
+        require(row is not None, 'Missing durable card intent')
+        return dict(row, contract=json.loads(current['contract']))
+
+    def reconcile_card(self, scope, topic_id, version, native_board, resolver):
+        """Trusted adapter only: resolve a parked card, never authorize execution.
+
+        Persist the destination before touching Kanban. Then hold the private
+        revision lock until the native commit and private link are complete.
+        The two commits are not atomic; resolver must recover by correlation.
+        All adapter paths acquire the private lock before the native write lock.
+        """
+        origin = scope.key()
+        require(nonempty(native_board), 'Native board identity is required')
+        with self._transaction() as db:
+            intent = self._card_revision(db, origin, topic_id, version)
+            if intent['native_board'] is None:
+                db.execute('INSERT INTO card_links VALUES(?,?,?,NULL)',
+                           (topic_id, version, native_board))
+            else:
+                require(intent['native_board'] == native_board, 'Card belongs to another native board')
+        with self._transaction() as db:
+            intent = self._card_revision(db, origin, topic_id, version)
+            require(intent['native_board'] == native_board, 'Card belongs to another native board')
+            dependencies = []
+            for dependency in intent['contract']['depends_on']:
+                parent = self._card_revision(db, origin, **dependency)
+                require(parent['native_card_id'] is not None, 'Dependency card is not reconciled')
+                require(parent['native_board'] == native_board, 'Dependency belongs to another native board')
+                dependencies.append(parent)
+            card_id = resolver(intent, dependencies)
+            require(nonempty(card_id), 'Native resolver did not return a card ID')
+            require(intent['native_card_id'] in (None, card_id), 'Conflicting native card binding')
+            db.execute('UPDATE card_links SET native_card_id=? WHERE topic_id=? AND version=?',
+                       (card_id, topic_id, version))
+            result = dict(topic_id=topic_id, version=version, correlation=intent['correlation'],
+                          native_board=native_board, native_card_id=card_id, released=False)
         return result
 
     def record_delivery_reference(self, scope, topic_id, version, message_id):

@@ -66,6 +66,38 @@ The external executor rejects all Shop requests, even with a supplied product
 ID. A separate native Shop executor with actual eligibility, SKU verification
 and a receipt is still required. No marketplace mutation is performed by tests.
 
+## Publication Entry Points
+
+`publication_policy.py` rejects emojis in new captions, narration, comments and
+subtitles. It also rejects a limited set of unsupported promises (such as free
+shipping, approved lab reports, exclusive discounts or guaranteed results).
+This is not a general factual verifier. There is no evidence override yet:
+generic approval flags cannot validate a current offer or a pinned comment.
+Rejected text must be revised and reviewed again, never silently rewritten.
+
+`patch_publication.py` stages version-pinned changes to existing entry points:
+the legacy TikTok uploader refuses `TIKTOK_PUBLISH=1`; the official campaign
+path keeps its review guards; historical comment reconciliation remains
+read-only and preserves exact old text. YouTube affiliate templates no longer
+add emojis, and its uploader validates text before account authentication.
+Affiliate URLs, schedules, campaign state and historical posts are untouched.
+
+```sh
+python patch_publication.py /root/tools /path/to/independent-staging
+ULTRON_NATIVE_PUBLICATION_TEST=1 python -m pytest agent/video/test_patch_publication.py -q
+```
+
+The native test accepts the supported original or exactly migrated source; it extracts
+pure validators/text factories and never imports or invokes a publisher. Stage
+and review the diff, back up affected files, verify publishers are idle, install
+the policy helper beside each publisher, then the staged source. This migration
+does not install the private account pipeline from scratch. Its exact hash
+checks deliberately reject unrelated source changes.
+
+Installed locally on 2026-10-01 after an encrypted backup: seven patched sources
+and two policy helpers. The gateway was idle, stopped briefly during replacement
+and restarted. No real post or marketplace item was created during validation.
+
 ## Rollback
 
 Restore only affected code/payload from the private backup after draining the

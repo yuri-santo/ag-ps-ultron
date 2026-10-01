@@ -149,3 +149,22 @@ prematuramente. A [especificacao revisada](2026-09-29-topic-queue-design.md)
 conserva Kanban como motor unico, explicita contratos adicionais e separa
 capacidade ajustavel de permissoes/validacao. Implementacao e ativacao seguem
 como trabalho tecnico, sem nova rodada de aprovacao do mesmo pedido.
+
+## Adapter Testado Em 01/10/2026
+
+`agent/topic_queue` agora concilia intencoes duraveis com cards Kanban nativos
+em estado blocked, sem assignee, sessao ou subscriptions. A reserva do board
+precede o primeiro commit nativo; retry recupera correlacao apos crash antes
+do vinculo privado. O write_txn externo fecha a corrida do lookup nativo de
+idempotencia. Criacao nao implica aprovacao nem habilita o dispatcher.
+
+Triagem usa o cliente auxiliar nativo `kanban_decomposer` sem ferramentas,
+sem recortar texto e sem invocar o decompositor que promove o grafo. A proposta
+precisa preservar os spans autorizados e o snapshot completo da origem; versao,
+validade e contrato sao rechecados no mesmo commit da proposta. Nao ha modelo
+real nos testes: a acuracia da classificacao continua sem benchmark.
+
+103 testes passaram no adapter, incluindo Kanban temporario e falhas de
+concorrencia/reinicio; o subconjunto nativo acima voltou a passar com 54 testes.
+Nenhum card foi criado no board real. Ainda faltam as barreiras de aprovacao,
+ingresso autenticado anterior ao FIFO e outbox; a fila nova nao esta ativa.
