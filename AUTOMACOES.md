@@ -9,14 +9,14 @@ pessoais foram omitidos.
 ## Rotina diária (entrega no Telegram / voz)
 | Job | Quando | O que faz |
 |---|---|---|
-| `resumo-diario-7h` | 07:00 | Resumo matinal (dados coletados por pré-script). |
-| `agenda-secretaria` | 07:30 | A **Dona** lê a agenda do dia (WorkMail/Calendar) e avisa. |
-| `financas-guardiao` | 09:00 | O **Bigode** revisa contas/orçamento do dia. |
+| `pink-curadoria-memoria` | 08:40 | A **Pink** consolida a memória do dia (antecede toda a esteira da manhã). |
+| `resumo-diario-7h` | 09:00 | Resumo matinal (dados coletados por pré-script). |
+| `radar-datas-especiais` | 09:00 / 20:45 | Avisa vésperas e datas importantes. |
+| `Yuri Evolution Watchdog` | seg 09:00 | Atualiza o Logbook semanal (`updater.py`). |
+| `agenda-secretaria` | 09:15 | A **Dona** lê a agenda do dia (WorkMail/Calendar) e avisa. |
+| `financas-guardiao` | 09:30 | O **Bigode** revisa contas/orçamento do dia. |
 | `time-sync-diario` | 19:00 | Sincroniza o **time** (finanças + saúde + agenda). |
 | `jesus-checkin-noite` | 20:00 | Check-in de saúde, treino e bem-estar (**Jesus**). |
-| `pink-curadoria-memoria` | 06:40 | A **Pink** consolida a memória do dia. |
-| `Yuri Evolution Watchdog` | seg 07:00 | Atualiza o Logbook semanal (`updater.py`). |
-| `radar-datas-especiais` | 07:00 / 20:45 | Avisa vésperas e datas importantes. |
 
 ## Saúde — lembretes de remédio (cobram até confirmar)
 Consultam `saude_yuri.db` (tabela `med_log`) e insistem se ainda estiver
@@ -54,11 +54,11 @@ Jobs de sincronização de chamados SAP às 10h e 20h (perfis **Cris**/**Thor**)
 ## Infra, backup e conhecimento
 | Job | Quando | O que faz |
 |---|---|---|
-| `ultron-seguranca` | dom 04:30 | Auditoria Lynis/Trivy/Gitleaks. |
-| `ultron-backup` | 03:40 | Backup **restic** criptografado. |
-| `backup-vps-drive` | 06:15 | `auto_archive_vps.py` — arquivo compactado. |
-| `ultron-lab-monitor` | 10 min | Avisa se um serviço do homelab cai. |
-| `NotebookLM Auth Keepalive` / `Cookie Sync` | 30 min / 1 h | Mantém a sessão do NotebookLM viva (ver [INTEGRACOES.md](INTEGRACOES.md)). |
+| `ultron-backup` | sáb 10:30 | Backup **restic** criptografado para o disco D: (pós-aula de inglês). |
+| `backup-vps-drive` | sáb 10:45 | `auto_archive_vps.py` — compacta 66 bancos SQLite e sobe no Google Drive. |
+| `ultron-seguranca` | sáb 11:00 | Auditoria Lynis/Trivy/Gitleaks (máquina ligada e livre). |
+| `ultron-lab-monitor` | 10 min | Sentinela contínuo: avisa se um serviço do homelab cai. |
+| `NotebookLM Auth Keepalive` / `Cookie Sync` | 30 min / 1 h | Mantém a sessão do NotebookLM viva no Google (rotatividade contínua de cookie). |
 
 ## Lembretes pontuais (Once)
 Consultas médicas, retiradas de medicamento, vésperas — criados sob demanda como

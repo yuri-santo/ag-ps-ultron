@@ -19,7 +19,7 @@ restic backup --quiet --tag diario \
   --exclude '/opt/agent-stacks/**/models' --exclude '/opt/agent-stacks/homelab-data/_removidos-*' \
   /root/.hermes /root/ultron-local /opt/agent-stacks /root/tools/stt /root/.config/restic/README 2>"$OUT/backup.err" || erro="$erro restic_backup"
 restic forget --quiet --tag diario --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune >/dev/null 2>>"$OUT/backup.err" || erro="$erro restic_forget"
-if [ "$(date +%u)" = 7 ]; then restic check --read-data-subset=5% >/dev/null 2>>"$OUT/backup.err" || erro="$erro restic_check"; fi
+if [ "$(date +%u)" = 6 ]; then restic check --read-data-subset=5% >/dev/null 2>>"$OUT/backup.err" || erro="$erro restic_check"; fi
 ultimo=$(restic snapshots --latest 1 --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); s=d[-1] if d else {}; print(json.dumps({'id': s.get('short_id'), 'hora': s.get('time','')[:19]}))" 2>/dev/null || echo '{}')
 stats=$(restic stats --mode raw-data --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(round(d.get('total_size',0)/1e9,2))" 2>/dev/null || echo null)
 python3 - "$OUT/backup.json" "$ultimo" "$stats" "$erro" "$(( $(date +%s) - inicio ))" <<'PY'

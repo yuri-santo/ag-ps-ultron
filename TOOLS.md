@@ -118,8 +118,8 @@ O perfil Money recebe somente o subconjunto adaptado de
 | Timer | Quando | O que faz |
 |---|---|---|
 | `ultron-lab-monitor` (`monitor.py`) | a cada 10 min | Avisa no Telegram se um serviço do homelab cai ou se chega e-mail novo com cara de golpe. |
-| `ultron-seguranca` (`security/auditar.py`) | domingo 04:30 | Auditoria Lynis/Trivy/Gitleaks; avisa só o que é novo. |
-| `ultron-backup` (`security/backup.sh`) | diário 03:40 | Backup **restic** criptografado em D:, com snapshot consistente dos SQLite. |
+| `ultron-seguranca` (`security/auditar.py`) | sábado 11:00 | Auditoria Lynis/Trivy/Gitleaks; avisa só o que é novo. |
+| `ultron-backup` (`security/backup.sh`) | sábado 10:30 | Backup **restic** criptografado em D:, com snapshot consistente dos SQLite. |
 
 Âncora de logon (`agent/scripts/autostart/hermes-autostart.vbs` + Tarefa Agendada)
 mantém o WSL vivo no logon, sem janela.
