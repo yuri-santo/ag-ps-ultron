@@ -61,6 +61,26 @@ def _hora(dt):
     return dt.strftime('%H:%M') if dt else NAO_APURADO
 
 
+def _fim_captura(data, session, state):
+    # Legacy ended values can be report-generation times; retain that uncertainty.
+    if 'ended_at_source' in data:
+        value = data.get('ended_at')
+    else:
+        value = data.get('ended_at') or session.get('ended') or state.get('ended')
+    fim = _dt(value)
+    if not fim:
+        return NAO_APURADO
+    hora = _hora(fim)
+    source = data.get('ended_at_source')
+    if source == 'capture_streams_closed' and data.get('ended_at_estimated') is False:
+        return hora
+    if source == 'stopped_after_queue_drain':
+        return hora + ' (estimado pelo aviso de parada; inclui processamento; fim real não confirmado)'
+    if (data.get('speakers') or {}).get('source') == 'platform_captions':
+        return hora + ' (fim da captura de legendas informado pela plataforma)'
+    return hora + ' (estimado; origem do horário não verificada)'
+
+
 def _pessoa(value):
     if isinstance(value, dict):
         return value.get('name') or value.get('email') or value.get('address') or ''
@@ -77,7 +97,7 @@ def build_minutes(data):
     if records is None:
         records = consolidated.get('records') or []
     inicio = _dt(meeting.get('start')) if meeting.get('start') else _dt(session.get('created'))
-    fim = _dt(data.get('ended_at')) or _dt(session.get('ended')) or _dt(state.get('ended'))
+    fim = _fim_captura(data, session, state)
     titulo = meeting.get('subject') or session.get('title') or 'Reunião'
     escopo = ' / '.join(x for x in (state.get('ticket_client') or '', state.get('project') or '') if x)
     join_url = str(meeting.get('join_url') or meeting.get('online_meeting_url') or '')
@@ -126,7 +146,7 @@ def build_minutes(data):
     pendentes = list(data.get('pending_findings') or [])
     relatorios = references(data.get('sources') or []) or ''
     return {
-        'titulo': titulo, 'escopo': escopo, 'data': _data(inicio), 'inicio': _hora(inicio), 'fim': _hora(fim),
+        'titulo': titulo, 'escopo': escopo, 'data': _data(inicio), 'inicio': _hora(inicio), 'fim': fim,
         'local': local, 'presidente': presidente, 'organizador': organizador,
         'secretaria': 'Ultron (secretaria automatizada)',
         'convocados': convocados, 'presentes': presentes, 'decisoes': decisoes, 'acoes': acoes,

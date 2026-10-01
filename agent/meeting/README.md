@@ -57,6 +57,49 @@ O resumo continua baseado em trechos literais. Uma futura sintese por tema deve
 manter evidencias separadas e passar por avaliacao em PT-BR.
 Consulte [o plano de evolucao](../../docs/EVOLUCAO-AGENTE-2026-09-28.md).
 
+## Horario de encerramento
+
+`patch_capture_stop.py` fornece `transform_capture(source)` para o
+`capture_agent.py` e `transform_runtime(source)` para o `runtime.py` instalado.
+Sao transformacoes puras, com validacao de sintaxe, idempotencia e rejeicao de
+layout desconhecido: nao alteram instalacoes, nao reiniciam captura e nao leem
+dados de reunioes. As duas migracoes foram aplicadas no ambiente local em
+01/10/2026, junto deste `render_report.py` (tambem usado pelo Word), apos backup
+criptografado e testes. Em outra instalacao, revisar os fontes e aplicar ambas;
+nao basta substituir somente o renderizador.
+
+O timestamp novo mede o fechamento dos dois streams no Windows, antes da
+persistencia final e da transcricao. Nao afirma o fim real da reuniao. Quando um
+stream falha ou nao confirma o fechamento, o fim fica desconhecido. Eventos
+reproduzidos nao substituem o fim atual, e uma nova captura limpa o fim anterior.
+
+Agentes antigos emitem `stopped` depois de processar a fila de ASR. Esse horario
+fica explicitamente estimado pelo aviso de parada, sem confirmar o fim real e
+sem tratar o aviso como limite superior garantido. Payloads antigos sem origem
+recebem aviso de origem nao verificada; `ended_at` explicitamente desconhecido
+nao recorre ao horario de geracao do documento. Nenhum registro original,
+transcricao ou payload historico e regravado por estas funcoes.
+
+Exemplo para produzir uma copia candidata sem sobrescrever o original:
+
+```python
+from pathlib import Path
+from patch_capture_stop import transform_runtime
+
+original = Path('/caminho/para/runtime.py')
+candidate = Path('/diretorio-de-revisao/runtime.py')
+updated = transform_runtime(original.read_bytes().decode('utf-8'))
+with candidate.open('xb') as stream:
+    stream.write(updated.encode('utf-8'))
+```
+
+Teste isolado: `python -m unittest discover -s agent/meeting -p test_capture_stop.py -v`.
+Para validar tambem os fontes instalados, somente leitura, defina
+`MEETING_RUNTIME_SOURCE` e `MEETING_CAPTURE_SOURCE` para os caminhos desses
+arquivos. A cobertura executa os metodos de ingestao/finalizacao com registros
+sinteticos, interrompendo antes de subprocessos e entrega; nao abre microfones,
+nao transcreve audio real e nao envia documentos.
+
 ## Testes
 
 ```bash

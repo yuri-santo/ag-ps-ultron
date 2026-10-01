@@ -52,6 +52,20 @@ skills, delivery settings and execution history. Clearing `context_from`
 prevents replaying old execution text containing legacy uploader instructions;
 it does not delete history. Do not create another scheduler or duplicate job.
 
+## Marketplace Channels
+
+`marketplace_channels.py` preserves the owner's original affiliate URLs and
+separates Mercado Livre external campaigns from native TikTok Shop products.
+Classification never proves commission, product identity or creator eligibility.
+`patch_marketplace_channels.py` provides scoped, idempotent transformations for
+the existing autonomy and publication guard. The deployment helper also updates
+the existing pool and dispatcher after an encrypted backup; it is not a clean
+installation of the private pipeline. See [channel policy](MARKETPLACE-CHANNELS.md).
+
+The external executor rejects all Shop requests, even with a supplied product
+ID. A separate native Shop executor with actual eligibility, SKU verification
+and a receipt is still required. No marketplace mutation is performed by tests.
+
 ## Rollback
 
 Restore only affected code/payload from the private backup after draining the
