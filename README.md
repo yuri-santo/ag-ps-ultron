@@ -71,7 +71,7 @@ Estado e limites da ultima entrega:
 - **Stream Deck**: um celular na LAN que abre tudo **no PC**, nunca no celular.
 - **Anti-golpe**: detector determinístico de phishing em mensagens e e-mails.
 - **Se cuida sozinho**: monitor a cada 10 min, auditoria de segurança semanal,
-  backup criptografado diário.
+  backup criptografado agendado.
 
 ## Estrutura
 ```
@@ -81,6 +81,10 @@ agent/
   meeting/        ATA em PDF e Word
   stt/            transcrição (Parakeet) e diarização (pyannote)
   security/       auditoria (Lynis/Trivy/Gitleaks) e backup (restic)
+  audit/          SkillSpector isolado para auditoria estatica de skills
+  integrations/   ferramentas nativas por perfil e importacao de legendas
+  topic_queue/    fundacao privada de triagem, aprovacao e entrega (nao ativada)
+  phone/          PhoneHarness offline e Maestro CLI fixado
   homelab/        stacks docker + inventário
   skills/         SKILL.md
   scripts/        instaladores e âncora de logon (WSL)
@@ -91,9 +95,10 @@ docs/             notas de evolução
 ```
 
 ## Rodar / instalar
-O agente é o **Hermes** (NousResearch). A instalação base do Hermes e do
-9Router está em [INSTALL.md](INSTALL.md) *(histórico: descreve o cenário VPS; hoje
-roda no WSL do notebook)*. Os plugins deste repositório são instalados com
+O agente é o **Hermes** (NousResearch). Hermes, Ultron e 9Router desta instalacao
+sao inteiramente locais em Windows/WSL, sem vinculo com VPS finaro. Comece pelo
+[guia local](docs/RECRIAR-ULTRON.md), nao pelos exemplos antigos de VPS em
+[INSTALL.md](INSTALL.md). Os plugins deste repositório são instalados com
 `agent/deploy_lab.py` / `agent/deploy.py` e os scripts em `agent/scripts/`.
 
 ## Atualizar o retrato da instalação existente
@@ -110,6 +115,10 @@ O script troca e-mails/IPs/tokens reais por placeholder e **aborta o push** se a
 guarda de segredos achar qualquer coisa sensível.
 
 ## Nota sobre os documentos históricos
-`INSTALL.md`, `NETWORK.md` e `RUNBOOK.md` descrevem a fase em que o agente rodava
-numa VPS com túneis para casa. A implantação atual é **local no WSL**; use
-[ARCHITECTURE.md](ARCHITECTURE.md) como fonte da verdade.
+Referencias de VPS em `INSTALL.md`, `NETWORK.md` e `RUNBOOK.md` sao material
+legado e nao comprovam uma fase remota deste Hermes. A implantacao e **local
+no WSL**; use [ARCHITECTURE.md](ARCHITECTURE.md) como fonte da verdade.
+
+Estado dos projetos discutidos: [matriz de adocao](docs/INTEGRACOES-2026-10-01.md).
+Ela distingue instalado, adaptado, referencia e bloqueado. A vitrine TikTok
+Shop permanece bloqueada por decisao do titular, sem bloquear afiliados externos.

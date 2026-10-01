@@ -1,5 +1,9 @@
 # Rede — configuração completa
 
+> Hermes/Ultron/9Router sao inteiramente locais em Windows/WSL. Referencias
+> de VPS neste documento sao legadas, nao dependencias do bot. Nao configurar
+> acesso remoto ou mover o agente para VPS finaro a partir destes exemplos.
+
 Como o sistema é acessado e protegido em nível de rede: da LAN de casa
 ao acesso remoto de fora, via WireGuard.
 

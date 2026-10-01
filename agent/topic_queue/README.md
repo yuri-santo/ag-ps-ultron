@@ -18,6 +18,11 @@ Segue o [desenho aprovado](../../docs/superpowers/specs/2026-09-29-topic-queue-d
 - Proposta semantica pelo cliente auxiliar nativo, com JSON estrito, snapshot
   dos assuntos da mesma origem e preservacao da mensagem pendente em falhas.
 - Referencias de replies isoladas por origem; nao equivalem a recibos de envio.
+- Preparacao imutavel do candidato/autor real/partes finais antes da revisao.
+- Aprovacao por competencias e revisor independente, vinculada a versao,
+  card, execucao, modelo servido e hashes obtidos por leitores do host.
+- Outbox por parte, lock de conversa entre processos, intent duravel, recibos
+  atomicos e reconciliacao sem repetir um envio de resultado incerto.
 
 `TopicStore(path, allowed_profiles=...)` exige diretorio privado dedicado em
 Linux/WSL: pasta 0700, banco 0600. Nao apontar para a raiz do perfil, para uma
@@ -62,11 +67,33 @@ dependencias necessarias precisam estar representadas no novo plano.
 
 ## Ainda Nao Implementado
 
-Adapter pos-autorizacao e anterior ao FIFO ocupado; veto pre-transicao; manifestos de
-aprovacao; outbox por parte; recibos reais e tratamento de envio incerto; pausa,
-cancelamento e recuperacao end-to-end. Nao ha worker de admissao/triagem/card
+Adapter pos-autorizacao e anterior ao FIFO/agrupamento ocupado; veto pre-transicao;
+leitores de aprovacao e recibos ligados ao runtime real; transporte Telegram,
+pausa/cancelamento e recuperacao end-to-end. Nao ha worker de admissao/triagem/card
 ligado ao gateway; estas APIs sao componentes, nao uma fila operacional nova.
 
 Nao habilitar processamento com base apenas nesta suite. O aceite final precisa
 provar A lento/B rapido, dependencia por versao aprovada, falha de provedor,
 queda antes/depois do envio e ausencia de entrega duplicada ou sem validacao.
+
+## Aprovacao e envio preparados
+
+`delivery.py` recebe leitores confiaveis `execution`, `review`, `policy`,
+`control` e `outcome`. As APIs aceitam IDs, nunca aprovacoes declaradas pelo
+modelo. Politica/roster, dependencias, controle e versao sao revalidados antes
+de cada parte. Texto preformatado e congelado antes da revisao, sem formatar
+novamente durante envio. Esta versao transporta somente texto.
+
+`dispatch_next(scope, send)` segura flock Linux/WSL por conversa e transacao
+privada durante cada envio. O host DEVE impor timeout ao transporte e coordenar
+mudancas de controle com a mesma transacao. `reconcile` so aceita recibos do
+leitor confiavel. Timeouts/crashes nao geram reenvio automatico. Uma parte
+unica/final incerta nao bloqueia outra entrega independente; um grupo multipart
+incompleto e ainda valido nao e intercalado. Cancelamento/invalidacao impede
+partes restantes, sem apagar tentativas cujo efeito externo e desconhecido.
+
+70 testes da entrega passaram em 01/10/2026, incluindo multiprocessos, falha de
+persistencia de recibo, cancelamento, reabertura e recuperacao. Os leitores e
+transportes desses testes sao simulados. Nao constitui teste do Telegram real.
+`patch_worker_proof.py` preserva metadados/hashes dos resultados restritos;
+nao transforma status `not_required` em aprovacao de comite.

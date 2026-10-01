@@ -87,3 +87,24 @@ sem iniciar um servidor ADB publicamente acessivel. Modelos e credenciais
 tambem continuam pendentes, sem fallback implicito.
 
 Nao ha servico externo, VPS, cron, plugin Hermes ou operador autonomo novo.
+
+## Maestro complementar (01/10/2026)
+
+Maestro CLI 2.11.0 instalado no Windows, em `~/tools/maestro-2.11.0`, release
+oficial fixada e ZIP verificado por SHA256. Java 21 existente foi preservado.
+`--version` retornou `2.11.0`, com analytics desativado. ADB encontrou um aparelho
+USB autorizado; serial nao e publicado. Nenhum fluxo foi executado no telefone.
+
+Reproducao: `./agent/phone/install_maestro.ps1`. O instalador recusa destino
+existente e verifica SHA256/caminhos antes de extrair; nao edita PATH, Android,
+WireGuard, acessibilidade, pacotes ou ADB TCP. Launcher de diagnostico:
+
+```powershell
+./agent/phone/maestro-local.ps1 -Operation version
+./agent/phone/maestro-local.ps1 -Operation help
+```
+
+O CLI upstream inclui MCP, mas ainda nao foi exposto aos perfis: falta limitar
+o aparelho e as operacoes, validar efeitos no Deck/PWA e testar recuperacao.
+Instalacao verificada nao equivale a controle autonomo validado. PhoneHarness
+permanece na preparacao offline descrita acima, sem habilitar seu proxy.

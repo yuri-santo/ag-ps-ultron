@@ -7,7 +7,8 @@ configurado. O repositorio ainda nao recria o agente completo em um comando.
 ## 1. Codigo e Python
 
 Para o agente local, use Linux ou WSL com Debian/Ubuntu. O painel roda no Windows:
-veja [panel/SETUP.md](../panel/SETUP.md). Uma VPS nao e necessaria para a demo.
+veja [panel/SETUP.md](../panel/SETUP.md). Hermes, Ultron e 9Router desta instalacao
+sao locais; VPS finaro nao participa e nao e requisito de nenhum componente.
 No PowerShell, se o WSL ainda nao estiver instalado:
 
 ```powershell
@@ -73,8 +74,8 @@ Registre a versao instalada: este repositorio nao fixa uma revisao do Hermes
 nem valida todas as versoes da API de plugins.
 
 9Router e uma opcao de gateway de modelos; nao e dependencia da demo offline.
-O [INSTALL.md](../INSTALL.md) original descreve uma montagem historica em VPS;
-confira seus comandos na versao atual de cada projeto antes de executar.
+O [INSTALL.md](../INSTALL.md) conserva exemplos legados de VPS, que nao
+descrevem a instalacao deste Hermes. Nao os use para configurar o bot local.
 
 O diretorio de dados do Hermes deve conter `config.yaml`. Normalmente e
 `~/.hermes` para o usuario do agente; `/root/.hermes` corresponde a execucao como

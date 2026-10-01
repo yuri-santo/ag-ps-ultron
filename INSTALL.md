@@ -2,7 +2,9 @@
 
 > **Comece pelo [guia atual de reprodução](docs/RECRIAR-ULTRON.md).** Ele cobre
 > o clone público, a demonstração offline de atas, o Ultron Lab e os componentes
-> ainda ausentes. O texto abaixo registra a montagem histórica em VPS; não é um
+> ainda ausentes. O texto abaixo conserva exemplos legados de VPS, que NAO
+> descrevem este Hermes: Hermes/Ultron/9Router sao inteiramente locais e nao
+> tem vinculo com VPS finaro. Nao e um
 > instalador completo do agente local/WSL nem foi revalidado integralmente nas
 > versões atuais dos serviços. O instalador Team legado pode alterar SOULs.
 

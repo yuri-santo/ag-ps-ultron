@@ -97,3 +97,23 @@ profiles/<nome>/
 Onde ligar/desligar: `config.yaml` (`plugins.enabled`, `platform_toolsets`,
 `model.*` → 9Router). Ver **[DASHBOARD.md](DASHBOARD.md)** (aba Profiles/Config)
 e **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
+## Adapters locais por contexto
+
+O plugin `ultron_adoption` acrescenta ferramentas sem mudar SOULs:
+
+- Ultron: disponibilidade, auditoria de skills cadastradas e importacao advanced
+  Transcriptonic. Consultar `adoption_status` para IDs/disponibilidade reais.
+- Mr. Robot: `adoption_skill_audit` antes de recomendar instalar/atualizar uma
+  skill cadastrada. Scanner parcial ou zero alertas nao equivale a aprovacao.
+- Dona/Maquiavel: `adoption_caption_import` para JSON advanced fornecido pelo
+  titular, preservando falas e origem sem inventar ASR, identidades ou decisoes.
+- Money: `adoption_marketing_guide` abre a skill pertinente antes de escrever
+  roteiros/copy ou analisar campanhas. Leitor nativo, sem comandos inline,
+  edicao de skills ou acesso adicional a contas.
+
+Vitrine TikTok Shop esta bloqueada pelo titular; nao habilitar nem cadastrar.
+Maestro CLI instalado e PhoneHarness offline nao significam controle autonomo
+do Android. A nova fila por assunto permanece componente em validacao, ainda
+sem ingresso/transporte conectado ao gateway. Ver a
+[matriz atual](docs/INTEGRACOES-2026-10-01.md) antes de declarar uma integracao ativa.

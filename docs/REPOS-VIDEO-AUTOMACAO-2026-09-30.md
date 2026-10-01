@@ -1,5 +1,8 @@
 # Repositorios, video e automacao local
 
+> Estado de instalacao atualizado em [01/10/2026](INTEGRACOES-2026-10-01.md).
+> Abaixo permanece o registro da analise de 30/09, nao a disponibilidade atual.
+
 Analise em 30/09/2026 via GitHub CLI autenticada, clones de leitura e arquivos
 de implementacao. Popularidade nao foi usada como prova de seguranca ou ganho.
 Nenhum instalador de terceiros foi executado. Hermes/Ultron continuam locais;
