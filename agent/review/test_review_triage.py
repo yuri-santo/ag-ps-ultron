@@ -1,5 +1,8 @@
 """Regressions for cheap conversational turns and reviewer-facing failures."""
 import unittest
+import json
+import sys
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import ultron_review_gate as gate
@@ -15,6 +18,19 @@ class Agent:
 
 
 class TriageTests(unittest.TestCase):
+    def test_subject_unavailability_releases_answer_with_confidence(self):
+        agent = Agent('Analise a nota SAP')
+        record = dict(status='unvalidated', completed=True, approval_completed=False,
+                      confidence='limited', delivery_notice='\n\nConfianca limitada: revisao incompleta. Thor indisponivel.')
+        module = SimpleNamespace(review_answer=lambda *a: record)
+        with patch.object(gate.Path, 'read_text', return_value=json.dumps({'subject_review_v2': True})), \
+             patch.dict(sys.modules, {'ultron_topic_queue.subject_review': module}):
+            visible = gate.review_final(agent, 'Analise da nota.', 'greeting-1')
+        self.assertTrue(visible.startswith('Analise da nota.'))
+        self.assertIn('Confianca limitada', visible)
+        self.assertTrue(gate.completion_allowed(agent))
+        self.assertFalse(agent._ultron_review_verdict['approval_completed'])
+
     def test_only_standalone_social_greetings_skip_network_review(self):
         for request in ('Oi!', 'Tudo bem com você?', 'Bom dia', 'Obrigado!',
                         'ultron voce esta ai?', 'ta ai ultron?'):
