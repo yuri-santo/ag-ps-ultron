@@ -56,7 +56,7 @@ def _worker_proof(result, agent, failed):
             review = {'status': 'invalid', 'completed': False}
         else:
             status = raw.get('status')
-            statuses = {'approved', 'not_required', 'pending_review', 'revision_required', 'validation_failed'}
+            statuses = {'approved', 'not_required', 'pending_review', 'revision_required', 'validation_failed', 'unvalidated'}
             status = status if isinstance(status, str) and status in statuses else 'invalid'
             review = {'status': status, 'completed': raw.get('completed') is True,
                       'output_sha256': sha256(raw.get('output_sha256')),
@@ -80,7 +80,7 @@ def _worker_proof(result, agent, failed):
                     rejected = True
                     continue
                 vote = verdict.get('verdict')
-                vote = vote if isinstance(vote, str) and vote in {'approved', 'revise', 'blocked'} else 'invalid'
+                vote = vote if isinstance(vote, str) and vote in {'approved', 'revise', 'blocked', 'unavailable'} else 'invalid'
                 issues, checks = verdict.get('issues'), verdict.get('checks')
                 review['reviews'].append({
                     'candidate_sha256': sha256(item.get('candidate_sha256')),
@@ -88,7 +88,11 @@ def _worker_proof(result, agent, failed):
                                  'served_model': identifier(reviewer.get('served_model'))},
                     'verdict': {'verdict': vote, 'issue_count': len(issues) if isinstance(issues, list) else None,
                                 'check_count': len(checks) if isinstance(checks, list) else None}})
-            rejected = bool(rejected or not review['completed'] or status not in {'approved', 'not_required'}
+            unvalidated = (status == 'unvalidated' and raw.get('approval_completed') is False
+                           and raw.get('confidence') == 'limited' and bool(raw.get('delivery_notice')))
+            if unvalidated:
+                review.update(approval_completed=False, confidence='limited')
+            rejected = bool(rejected or not review['completed'] or (status not in {'approved', 'not_required'} and not unvalidated)
                             or review['output_sha256'] != response_hash)
     evidence = []
     for item in tool_evidence(result.get('messages') or []):

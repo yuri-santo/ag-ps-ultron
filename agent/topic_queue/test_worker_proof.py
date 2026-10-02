@@ -96,6 +96,19 @@ def test_preserves_runtime_identity_completion_and_hash_only_receipts(tmp_path, 
         assert private not in serialized
 
 
+def test_unvalidated_delivery_is_not_discarded_or_marked_approved(tmp_path, monkeypatch):
+    ns, _, _ = patched_namespace(tmp_path, monkeypatch)
+    tool_evidence_stub(monkeypatch)
+    data = result()
+    data['model_review'].update(status='unvalidated', approval_completed=False, confidence='limited',
+                                delivery_notice='Confianca limitada', reviews=[])
+    proof = ns['_worker_proof'](data, runtime(), False)
+    assert proof['_proof_rejected'] is False
+    assert proof['model_review']['status'] == 'unvalidated'
+    assert proof['model_review']['approval_completed'] is False
+    assert proof['model_review']['confidence'] == 'limited'
+
+
 @pytest.mark.parametrize('change', [
     {'completed': False}, {'failed': True}, {'partial': True}, {'interrupted': True},
     {'model_review': {'completed': False, 'status': 'revision_required', 'visible_text': 'reject me'}},

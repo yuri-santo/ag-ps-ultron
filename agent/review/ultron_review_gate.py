@@ -237,6 +237,9 @@ def review_final(agent,text,turn_id):
             record = dict(status='pending_review', completed=False, reason='review_invalid:' + type(exc).__name__)
         visible = text + record.get('delivery_notice', '') if record.get('completed') is True else (
             'A resposta precisa de correcao antes da entrega. A tarefa continua registrada.')
+        if record.get('status') == 'unvalidated':
+            record['candidate_sha256'] = record.get('output_sha256')
+            record['output_sha256'] = hashlib.sha256(visible.encode()).hexdigest()
         agent._ultron_review_verdict = dict(record, turn_id=turn_id, input_sha256=input_hash,
                                            visible_text=visible)
         return visible
