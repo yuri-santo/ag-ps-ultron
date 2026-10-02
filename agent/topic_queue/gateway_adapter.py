@@ -169,6 +169,11 @@ async def control_command(adapter, event):
         candidate, source, internal = admitted
         require(not internal and _scope(adapter, source) == scope, 'Command scope changed')
         await asyncio.to_thread(runtime.control_scope, scope, 'cancelled')
+        try:
+            from .native_delivery import cancel
+        except ImportError:
+            from native_delivery import cancel
+        await asyncio.to_thread(cancel, runtime, scope)
 
 
 def _transport_preflight(adapter, scope, text):

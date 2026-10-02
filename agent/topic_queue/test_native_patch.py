@@ -15,7 +15,8 @@ WATCHER = 'gateway/kanban_watchers.py'
 DISPATCH = 'hermes_cli/kanban_db_dispatch.py'
 DATABASE = 'hermes_cli/kanban_db.py'
 NOTIFIER = 'gateway/kanban_watchers_notifier.py'
-PATHS = (TELEGRAM, WATCHER, DISPATCH, DATABASE, NOTIFIER)
+PATHS = (TELEGRAM, WATCHER, DISPATCH, DATABASE, NOTIFIER,
+         'agent/turn_response_intake.py', 'gateway/run_turn_runner.py')
 
 
 @pytest.fixture

@@ -49,7 +49,10 @@ def broker():
     return model_review
 
 def producer(agent):
-    return {'provider':str(getattr(agent,'provider','')),'model':str(getattr(agent,'model','')),'served_model':getattr(agent,'last_served_model',None)}
+    requested = str(getattr(agent, 'model', ''))
+    served = getattr(agent, 'last_served_model', None)
+    return {'provider': str(getattr(agent, 'provider', '')), 'model': served or requested,
+            'requested_model': requested, 'served_model': served}
 
 
 def is_cron(agent):

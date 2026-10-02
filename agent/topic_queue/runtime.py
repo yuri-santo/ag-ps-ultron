@@ -553,3 +553,8 @@ class Runtime:
             except ImportError:
                 from speech import kick
             await kick(self, adapter, scope)
+            try:
+                from .native_delivery import kick as kick_native
+            except ImportError:
+                from native_delivery import kick as kick_native
+            await kick_native(self, adapter, scope)

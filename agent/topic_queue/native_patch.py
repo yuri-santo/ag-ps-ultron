@@ -2,6 +2,8 @@
 import hashlib
 
 SOURCE_SHA256 = {
+    'agent/turn_response_intake.py': 'ff175a56283e807849da31e14416237b143c94f55a092e798c18a11479198e7b',
+    'gateway/run_turn_runner.py': '216bdca083b7d2bfae481d07bd0791a76834674b3614fd4ee0aafac5c58f30db',
     'plugins/platforms/telegram/adapter.py': '2e18f91d2abeaa70e23b2b7e6e9d469a372f11f243dc161c158206d0e413bd79',
     'gateway/kanban_watchers.py': 'a9ba617c7cae2d83022d07d32cd80a391b7a0ff72ece54b04890521466d067d9',
     'hermes_cli/kanban_db_dispatch.py': 'cae1e2eaa7d95083a2c94e13f6e01a25cc307e88c64be89b123504a2aa80c3f8',
@@ -9,6 +11,25 @@ SOURCE_SHA256 = {
     'gateway/kanban_watchers_notifier.py': 'b50ceea5fb309a7ecdc801ccda919cc5038ecbc7d2ad299d7ecf4c5eef26dbe1',
 }
 PATCHES = {
+    'agent/turn_response_intake.py': [
+        ('    assistant_message = normalize_response_for_agent(agent, response)',
+         '    from ultron_topic_queue.model_identity import observe as _observe_model\n'
+         '    _observe_model(agent, response)\n'
+         '    assistant_message = normalize_response_for_agent(agent, response)'),
+    ],
+    'gateway/run_turn_runner.py': [
+        ('        from gateway.run import _collect_auto_append_media_tags\n',
+         '        from gateway.run import _collect_auto_append_media_tags\n'
+         '        review = result.get("model_review") or {}\n'
+         '        if review and review.get("completed") is not True:\n'
+         '            from ultron_topic_queue.native_delivery import capture\n'
+         '            try:\n'
+         '                if capture(self._ctx, result, self._runner):\n'
+         '                    return ""  # Durable pending package, no orphan audio.\n'
+         '            except Exception as exc:\n'
+         '                logger.warning("Native delivery capture failed (%s)", type(exc).__name__)\n'
+         '            return final_response  # Never auto-append audio to a rejected response.\n'),
+    ],
     'gateway/kanban_watchers_notifier.py': [
         ('                    claimed = self._claim_for_sub(conn, slug, sub)',
          '                    task = kb.get_task(conn, sub["task_id"])\n'

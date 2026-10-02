@@ -358,7 +358,10 @@ def test_unknown_reply_uses_native_context_path(setup):
     assert runtime.records == []
 
 
-def test_queue_cancel_command_requires_full_native_authorization(setup):
+def test_queue_cancel_command_requires_full_native_authorization(setup, monkeypatch):
+    import native_delivery
+    cancelled = []
+    monkeypatch.setattr(native_delivery, 'cancel', lambda runtime, scope: cancelled.append(scope))
     module, runtime, runner, adapter = setup
     runtime.controls = []
     runtime.control_scope = lambda scope, state: runtime.controls.append((scope, state))
@@ -366,6 +369,8 @@ def test_queue_cancel_command_requires_full_native_authorization(setup):
     runner.authorized = False
     asyncio.run(module.control_command(adapter, command))
     assert runtime.controls == []
+    assert cancelled == []
     runner.authorized = True
     asyncio.run(module.control_command(adapter, command))
     assert runtime.controls == [(SCOPE, 'cancelled')]
+    assert cancelled == [SCOPE]
