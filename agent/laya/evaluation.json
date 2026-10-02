@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-02",
+  "mode": "isolated-evaluation",
+  "productionEnabled": false,
+  "packageVersion": "0.1.2",
+  "sourceCommit": "6478649e723122ca24bbf5fb69ed1010023c9750",
+  "modelRevision": "68f27dfe5a27a54fb2b1fefc432f43f972e90868",
+  "modelFilesVerified": 5,
+  "multilingualBundlePublished": false,
+  "policyTestsPassed": 3,
+  "npmAuditKnownVulnerabilities": 0,
+  "modelBenchmarkCompleted": false,
+  "accuracy": null,
+  "warmLatencyMs": null,
+  "experiment": {
+    "memoryMaxMiB": 2300,
+    "swapMaxMiB": 0,
+    "cpuQuotaPercent": 150,
+    "runtimeMaxSeconds": 180,
+    "observedRuntimeSeconds": 73.883,
+    "observedCpuSeconds": 58.921,
+    "reportedMemoryPeak": "2G",
+    "termination": "operator SIGTERM after WSL command latency and timeout"
+  },
+  "decision": "Installed offline evaluation only; do not activate without completed Portuguese accuracy and host latency measurements."
+}
