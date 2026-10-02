@@ -65,7 +65,19 @@ def is_cron(agent):
     if sid.startswith("cron_"): return True
     return False
 
+def interactive_review_disabled(agent):
+    if is_cron(agent):
+        return False
+    path = Path(os.environ.get('ULTRON_BASE_HOME', '/root/.hermes')) / 'topic-queue/config.json'
+    try:
+        return json.loads(path.read_text()).get('review_scope') == 'cron_only'
+    except (OSError, ValueError):
+        return False
+
+
 def hold_output(agent):
+    if interactive_review_disabled(agent):
+        return False
     key=(getattr(agent,'_current_turn_id',None),str(producer(agent)))
     cached=getattr(agent,'_ultron_review_hold',None)
     if cached and cached[0]==key:return cached[1]
@@ -184,6 +196,11 @@ def social_response(request, candidate):
 
 
 def review_final(agent,text,turn_id):
+    if interactive_review_disabled(agent):
+        agent._ultron_review_verdict = dict(status='not_required', completed=True,
+            reason='interactive_native_delivery', turn_id=turn_id, visible_text=text,
+            output_sha256=hashlib.sha256(text.encode()).hexdigest())
+        return text
     messages = getattr(agent, "_ultron_review_messages", [])
     rows, boundary = current_user_turn(messages)
     source = rows[boundary].get('content') if boundary >= 0 else None

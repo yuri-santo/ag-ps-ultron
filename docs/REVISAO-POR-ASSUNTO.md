@@ -1,5 +1,18 @@
 # Revisao por assunto e confianca da entrega
 
+## Estado atual: somente jobs
+
+Em 02/10/2026 o titular retirou a fila por assunto das conversas. Configuracao
+ativa: `enabled=false`, `review_scope=cron_only`, `subject_review_v2=true`.
+Mensagens diretas usam o fluxo nativo Hermes, sem triagem e sem revisao de
+entrega. `/ultron`, `/thor`, `/pink` e demais comandos continuam selecionando
+perfis persistentemente; `/perfil` informa o atual. Nenhuma permissao de
+ferramenta foi ampliada. Registros antigos da fila ficam preservados, inativos.
+
+Somente jobs nativos cron passam pela revisao descrita abaixo. Erro tecnico
+do revisor permite entregar com confianca limitada. Nao foi criada outra fila
+de execucao para jobs. Instalador: `agent/topic_queue/install_cron_only_review.py`.
+
 Politica solicitada pelo titular em 02/10/2026: falha tecnica de um revisor
 nao deve apagar a resposta pronta nem repetir as ferramentas executadas.
 

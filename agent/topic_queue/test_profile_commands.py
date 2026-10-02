@@ -16,7 +16,7 @@ def rig(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, package.__name__, package)
     command = importlib.import_module('profile_test_package.profile_commands')
     gateway = importlib.import_module('profile_test_package.gateway_adapter')
-    config = dict(persistent_profiles=True, roster={'ultron': 'Principal', 'pink': 'Memoria'},
+    config = dict(enabled=False, persistent_profiles=True, roster={'ultron': 'Principal', 'pink': 'Memoria'},
                   authors={'ultron': 'Ultron', 'pink': 'Pink'},
                   scopes=[dict(platform='telegram', account_id='1', owner_id='2', chat_id='2')])
     for directory in (tmp_path, tmp_path / 'profiles/pink'):

@@ -1,5 +1,10 @@
 # O time do Ultron — nomes, personalidades e especialidades
 
+**Estado atual (02/10/2026):** conversas diretas voltaram ao fluxo nativo,
+sem triagem nem fila por assunto. Revisao de entrega somente para jobs cron
+(`review_scope=cron_only`). Perfis continuam disponiveis por comando explicito.
+Esta decisao substitui a ativacao anterior da fila no Telegram.
+
 Politica de entrega atualizada em 02/10/2026: revisao apenas por assunto;
 indisponibilidade tecnica de revisor libera a resposta com **Confianca limitada:
 revisao incompleta**, sem registrar aprovacao inexistente. Tanos nao e etapa

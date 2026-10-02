@@ -18,6 +18,29 @@ class Agent:
 
 
 class TriageTests(unittest.TestCase):
+    def test_cron_only_policy_does_not_review_interactive_answers(self):
+        agent = Agent('Analise a nota SAP')
+        with patch.object(gate.Path, 'read_text', return_value=json.dumps({'review_scope': 'cron_only'})), \
+             patch.object(gate, 'broker', side_effect=AssertionError('Interactive review forbidden')):
+            self.assertFalse(gate.hold_output(agent))
+            visible = gate.review_final(agent, 'Resposta direta.', 'greeting-1')
+        self.assertEqual(visible, 'Resposta direta.')
+        self.assertEqual(agent._ultron_review_verdict['status'], 'not_required')
+        self.assertTrue(gate.completion_allowed(agent))
+
+    def test_cron_only_policy_keeps_job_review(self):
+        agent = Agent('Analise a nota SAP')
+        agent.is_cron = True
+        record = dict(status='unvalidated', completed=True, approval_completed=False,
+                      confidence='limited', delivery_notice=' Confianca limitada.')
+        module = SimpleNamespace(review_answer=lambda *a: record)
+        with patch.object(gate.Path, 'read_text', return_value=json.dumps(
+                {'review_scope': 'cron_only', 'subject_review_v2': True})), \
+             patch.dict(sys.modules, {'ultron_topic_queue.subject_review': module}):
+            visible = gate.review_final(agent, 'Resposta do job.', 'greeting-1')
+        self.assertIn('Confianca limitada', visible)
+        self.assertEqual(agent._ultron_review_verdict['status'], 'unvalidated')
+
     def test_subject_unavailability_releases_answer_with_confidence(self):
         agent = Agent('Analise a nota SAP')
         record = dict(status='unvalidated', completed=True, approval_completed=False,
