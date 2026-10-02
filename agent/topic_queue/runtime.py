@@ -497,6 +497,11 @@ class Runtime:
                     source_hash=digest(canonical(vote))))
                 review_ids.append(identity)
             approval = self.delivery.approve(scope, prepared['id'], review_ids)
+            try:
+                from .speech import enqueue
+            except ImportError:
+                from speech import enqueue
+            enqueue(self, approval['id'], result['answer'], candidate['request'])
             self._finish(task, '\n'.join(parts), approval['id'])
             self._release(scope)
         except Exception as exc:
@@ -543,3 +548,8 @@ class Runtime:
                     raise
                 return self.record_outcome(attempt, message_id)
             await asyncio.to_thread(self.delivery.dispatch_next, scope, send)
+            try:
+                from .speech import kick
+            except ImportError:
+                from speech import kick
+            await kick(self, adapter, scope)

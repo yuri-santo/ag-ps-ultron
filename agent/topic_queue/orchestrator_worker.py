@@ -13,7 +13,10 @@ def dispatch_ultron(home, task, *, context='', parent_session_id=''):
         if key.startswith(('HERMES_SESSION_', 'HERMES_KANBAN_')) or key in (
                 'HERMES_PROFILE', 'HERMES_TENANT', 'HERMES_YOLO_MODE', 'HERMES_ACCEPT_HOOKS'):
             env.pop(key, None)
-    env.update(HERMES_HOME=str(home), ULTRON_BASE_HOME=str(home), ULTRON_PROFILE='ultron')
+    # The outbox validates exact text. Post-review TTS transforms invalidate its
+    # hash; media must be handled separately by the delivery host.
+    env.update(HERMES_HOME=str(home), ULTRON_BASE_HOME=str(home), ULTRON_PROFILE='ultron',
+               ULTRON_HOST_HANDLES_SPEECH='1')
     process = subprocess.run([sys.executable, '-m', 'ultron_topic_queue.specialist',
         str(Path(home) / 'plugins/ultron_team/worker.py')], env=env, cwd=str(home),
         input=json.dumps(dict(task=task, context=context, parent_session_id=parent_session_id)),

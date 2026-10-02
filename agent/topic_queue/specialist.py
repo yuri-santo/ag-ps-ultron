@@ -19,6 +19,7 @@ def capture_identity(agent, response, aliases):
 def run_specialist(command, **kwargs):
     # The original bridge supplies allowlisted profile, scrubbed session env,
     # timeout, JSON request and cwd. Only its script entry is substituted.
+    kwargs['env'] = dict(kwargs.get('env', os.environ), ULTRON_HOST_HANDLES_SPEECH='1')
     return subprocess.run([command[0], '-m', 'ultron_topic_queue.specialist', command[1]], **kwargs)
 
 
