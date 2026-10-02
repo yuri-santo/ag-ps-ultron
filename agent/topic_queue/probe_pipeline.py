@@ -19,6 +19,7 @@ def main():
     for key in ('HERMES_KANBAN_DB', 'HERMES_KANBAN_BOARD', 'HERMES_PROFILE'):
         os.environ.pop(key, None)
     shutil.copy2(live / 'config.yaml', home / 'config.yaml')
+    shutil.copy2(live / 'SOUL.md', home / 'SOUL.md')
     for name in ('cerebro', 'tanos'):
         profile = home / 'profiles' / name
         profile.mkdir(parents=True, mode=0o700)

@@ -1,5 +1,10 @@
 # Gateway local por assunto
 
+Atualizacao de 02/10/2026: [perfis persistentes](PERFIS-PERSISTENTES.md).
+Ultron e o autor inicial, `/nome` seleciona um perfil ate nova escolha, `/perfil`
+informa a selecao e `/perfis` lista os comandos. A triagem respeita o perfil
+fixado na recepcao; o Cerebro deixou de ser o substituto da conversa geral.
+
 Ativado em 01/10/2026 no DM autorizado: servico ativo, um escopo e 21 perfis.
 Probe real com despachante nativo: dois cards concluidos, uma aprovacao, nenhum
 envio Telegram. Entrega na conta real ainda nao exercitada por este teste.

@@ -198,6 +198,39 @@ def test_unknown_reply_stays_native_not_silently_lost(runtime):
     assert runtime.knows_reply(SCOPE, 'unknown') is False
 
 
+def test_selected_profile_is_pinned_before_later_commands(runtime):
+    from profile_selection import Selection
+    runtime.config['persistent_profiles'] = True
+    for path in (runtime.home, runtime.home / 'profiles/greg'):
+        path.mkdir(parents=True, exist_ok=True)
+        (path / 'SOUL.md').write_text('identity')
+        (path / 'config.yaml').write_text('{}')
+    selection = Selection(runtime.home, runtime.roster)
+    selection.choose(SCOPE, 'greg', '1')
+    entry = runtime.admit(SCOPE, 'emails', '2')
+    selection.choose(SCOPE, 'ultron', '3')
+    task = claim(runtime, entry['card_id'])
+    def completion(**kwargs):
+        assert set(json.loads(kwargs['user'])['roster']) == {'greg'}
+        return proposal('emails')
+    runtime.run(task.id, task.current_run_id, complete=completion)
+    row = runtime.store.card_intents(SCOPE)[0]
+    assert runtime.store.get_topic(SCOPE, row['topic_id'])['contract']['profile'] == 'greg'
+
+
+def test_ultron_card_uses_native_default_home_not_nonexistent_profile(runtime):
+    runtime.roster['ultron'] = 'Principal'
+    runtime.store.allowed_profiles = frozenset(runtime.roster)
+    entry = runtime.admit(SCOPE, 'oi', '10')
+    task = claim(runtime, entry['card_id'])
+    value = json.loads(proposal('oi'))
+    value['topics'][0]['profile'] = 'ultron'
+    runtime.run(task.id, task.current_run_id, complete=lambda **kw: canonical(value))
+    row = runtime.store.card_intents(SCOPE)[0]
+    with runtime.connect() as conn:
+        assert runtime.kb.get_task(conn, row['native_card_id']).assignee == 'default'
+
+
 def test_old_not_sent_receipt_does_not_poison_later_success(runtime):
     finish(runtime, plan(runtime)[0]['native_card_id'])
     def deferred(scope, attempt_id, text):

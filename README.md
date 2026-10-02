@@ -23,6 +23,8 @@
 **Dashboard financeiro reproduzivel:** [codigo e inicializacao com dados ficticios](finance-dashboard/README.md).
 **Marketing do Money:** [10 skills instalaveis com limites de acao](agent/marketing/README.md).
 **Revisao e triagem:** [fila priorizada e correcao no mesmo turno](agent/review/README.md).
+
+**Perfis:** [Ultron como principal e comandos persistentes por conversa](docs/PERFIS-PERSISTENTES.md).
 **Novas referencias avaliadas:** [marketing, catalogos de APIs e transcricao](docs/REPOSITORIOS-AVALIADOS-2026-09-28.md).
 **Audio do Desktop:** [causa do timeout, correcao e verificacao](docs/HERMES-DESKTOP-AUDIO.md).
 **Video e automacao:** [qualidade do MP4 e integracao local](agent/video/README.md),

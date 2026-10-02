@@ -42,9 +42,10 @@ command is used. `/ultron` returns the conversation to Ultron.
   `Todo Mundo Odeia o Chris`, appropriate to professional/personal boundaries.
   Cris remains corporate; Greg remains personal. Neither quotes scripts,
   represents actors, uses slurs or makes comedy override accuracy.
-- Every profile receives one short, original catchphrase guideline for moments
+- Every profile receives one short catchphrase guideline for moments
   where it fits. It is optional, never repeated mechanically, never used in a
-  formal report or safety-sensitive response, and is not a copied famous quote.
+  formal report or safety-sensitive response. Brief recognizable expressions
+  are permitted; original mottos must not be falsely attributed as famous quotes.
 - Personalities live only in private SOUL/profile configuration. Public docs
   describe roles and behavior, never personal context or credentials.
 
@@ -76,8 +77,8 @@ command is used. `/ultron` returns the conversation to Ultron.
 
 - Storage failure leaves the existing selection unchanged and returns no false
   confirmation. The native command error path remains responsible for retry.
-- If a previously selected profile is removed or invalid, the store is not
-  trusted; the request falls back to Ultron and the stale selection is cleared.
+- If a previously selected profile is removed or invalid, keep the selection
+  and report unavailability. Never silently answer with another identity.
 - A selected profile that is unavailable in the multiplex gateway does not
   invoke a generic Cérebro fallback. It reports an availability failure and
   retains the selection for a later retry.
@@ -95,7 +96,7 @@ command is used. `/ultron` returns the conversation to Ultron.
 - Topic queue tests prove a selected profile pins the topic contract and does
   not allow semantic triage to replace it with Cérebro.
 - Configuration tests prove personality text preserves hard safety rules,
-  excludes copied catchphrases and keeps formal/sensitive contexts neutral.
+  keeps catchphrases brief and formal/sensitive contexts neutral.
 - Run the relevant gateway/topic-queue suite in isolated homes, then restart
   the local gateway and verify only the authenticated owner scope is affected.
 

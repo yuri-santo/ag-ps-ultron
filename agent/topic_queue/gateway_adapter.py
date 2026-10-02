@@ -113,6 +113,9 @@ async def try_admit(adapter, event):
             scope = _scope(adapter, candidate.source)
             if scope not in runtime.configured_scopes:
                 return False
+            if getattr(runtime, 'config', {}).get('persistent_profiles') and not getattr(candidate.source, '_ultron_selected_profile', None):
+                # Explicit native routes/dedicated bots remain owned by Hermes.
+                return False
             reply = getattr(candidate, 'reply_to_message_id', None)
             if reply and not await asyncio.to_thread(runtime.knows_reply, scope, reply):
                 return False

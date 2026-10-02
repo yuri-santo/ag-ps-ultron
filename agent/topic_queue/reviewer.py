@@ -27,7 +27,7 @@ def validate_vote(raw, *, binding, served, excluded):
 
 def review_final(prepared, request, *, profile, home, proof_id, context='', attempt=0):
     home = Path(home).resolve()
-    profile_home = home / 'profiles' / profile
+    profile_home = home if profile == 'ultron' else home / 'profiles' / profile
     require(profile_home.resolve() == profile_home and (profile_home / 'SOUL.md').is_file(),
             'Reviewer profile not installed')
     # Reuse the existing broker's identity normalization and configured routes.
@@ -97,7 +97,7 @@ def _call(home, model, system, user, max_tokens):
 def rewrite_candidate(candidate, feedback, *, profile, home):
     import yaml
     home = Path(home)
-    profile_home = home / 'profiles' / profile
+    profile_home = home if profile == 'ultron' else home / 'profiles' / profile
     require(profile_home.resolve() == profile_home, 'Invalid author profile')
     config = yaml.safe_load((profile_home / 'config.yaml').read_text())
     system = ((profile_home / 'SOUL.md').read_text() + '\n\n'

@@ -19,13 +19,15 @@ try:
     from .contract import canonical, require, QueueError
     from .delivery import Delivery
     from .native_cards import NativeCards
-    from .triage import NativeCompletion, plan_ingress
+    from .triage import NativeCompletion, plan_ingress, parse_proposal
+    from .profile_selection import Selection
 except ImportError:
     from admission import Scope, TopicStore
     from contract import canonical, require, QueueError
     from delivery import Delivery
     from native_cards import NativeCards
-    from triage import NativeCompletion, plan_ingress
+    from triage import NativeCompletion, plan_ingress, parse_proposal
+    from profile_selection import Selection
 
 BOARD = 'ultron-topics'
 
@@ -182,6 +184,8 @@ class Runtime:
     def admit(self, scope, text, message_id, reply_to=None):
         require(self.enabled and scope in self.configured_scopes, 'Scope is not enabled')
         require(isinstance(text, str) and text.strip() and not text.lstrip().startswith('/'), 'Text request required')
+        if self.config.get('persistent_profiles'):
+            Selection(self.home, self.roster).snapshot(scope, message_id)
         # Telegram quote entities/forwarding are excluded by the adapter. Full
         # user-authored text remains visible; models cannot authorize tools from
         # embedded content (worker boundary enforces this separately).
@@ -284,7 +288,8 @@ class Runtime:
             with self.connect() as conn:
                 task = self.kb.get_task(conn, row['native_card_id'])
                 if task.status == 'blocked' and task.assignee is None:
-                    self.kb.assign_task(conn, task.id, topic['contract']['profile'])
+                    profile = topic['contract']['profile']
+                    self.kb.assign_task(conn, task.id, 'default' if profile == 'ultron' else profile)
                     self.kb.unblock_task(conn, task.id)
 
     def maintain(self, now=None):
@@ -401,8 +406,24 @@ class Runtime:
                             'Ingress was cancelled')
                 with self.store._transaction() as db:
                     topics = [r[0] for r in db.execute('SELECT id FROM topics WHERE scope=? ORDER BY rowid', (scope.key(),))]
+                completion = complete or NativeCompletion()
+                if self.config.get('persistent_profiles'):
+                    with self.store._transaction() as db:
+                        message_id = db.execute('SELECT message_id FROM ingress WHERE id=?',
+                                                (data['ingress_id'],)).fetchone()[0]
+                    selected = Selection(self.home, self.roster).pinned(scope, message_id)
+                    if selected:
+                        original_completion = completion
+                        def completion(**kwargs):
+                            envelope = json.loads(kwargs['user'])
+                            envelope['roster'] = {selected: self.roster[selected]}
+                            kwargs['user'] = canonical(envelope)
+                            kwargs['system'] += '\nPerfil escolhido pelo titular: ' + selected + '. Todos os assuntos devem usar esse perfil.'
+                            proposal = parse_proposal(original_completion(**kwargs))
+                            require(all(t['profile'] == selected for t in proposal['topics']), 'Selected profile changed by triage')
+                            return canonical(proposal)
                 result = plan_ingress(self.store, scope, data['ingress_id'], roster=self.roster,
-                                      complete=complete or NativeCompletion(), context_ids=topics)
+                                      complete=completion, context_ids=topics)
                 require(result['status'] in ('planned', 'not_pending'), result.get('reason', 'triage_pending'))
                 self._release(scope)
                 self._finish(task, 'Triagem persistida; entregas no outbox aprovado.', data['ingress_id'])
@@ -416,7 +437,11 @@ class Runtime:
                 sys.path.insert(0, str(self.home / 'plugins'))
                 from ultron_team.bridge import Bridge
                 from .specialist import run_specialist
-                worker = Bridge(self.home, runner=run_specialist).dispatch
+                bridge = Bridge(self.home, runner=run_specialist)
+                from .orchestrator_worker import dispatch_ultron
+                worker = lambda profile, request, **kw: (
+                    dispatch_ultron(self.home, request, **kw) if profile == 'ultron'
+                    else bridge.dispatch(profile, request, **kw))
             candidate = self._execution(task, scope, data, worker, rewriter)
             result = candidate['result']
             profile = data['contract']['profile']

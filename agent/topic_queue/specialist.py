@@ -45,6 +45,12 @@ def main():
     class TopicAgent(original_agent):
         def __init__(self, *args, **kwargs):
             kwargs['enabled_toolsets'] = [s for s in kwargs.get('enabled_toolsets', []) if s != 'kanban']
+            kwargs['ephemeral_system_prompt'] = kwargs.get('ephemeral_system_prompt', '') + (
+                '\nConversa direta com o titular no perfil explicitamente escolhido. '
+                'Use a personalidade do seu SOUL. Responda de modo natural; parecer com '
+                'veredicto e campos formais somente quando solicitado ou necessario. '
+                'Quando perguntado sobre o perfil ativo, informe seu nome real. '
+                'Bordao curto so quando couber; nunca substitui a resposta solicitada.')
             super().__init__(*args, **kwargs)
     run_agent.AIAgent = TopicAgent
     from agent import turn_response_intake
@@ -62,6 +68,9 @@ def main():
         proof['evidence'] = ultron_review_gate.tool_evidence(result.get('messages') or [])
         return proof
     module._worker_proof = with_evidence
+    if os.environ.get('ULTRON_PROFILE') == 'ultron':
+        from .orchestrator_worker import execute
+        module.execute = lambda request: execute(request, with_evidence)
     module.main()
 
 

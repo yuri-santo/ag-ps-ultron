@@ -26,7 +26,20 @@ PATCHES = {
         ('        event = await self._build_triggered_event(msg, update, MessageType.COMMAND)\n',
          '        event = await self._build_triggered_event(msg, update, MessageType.COMMAND)\n'
          '        from ultron_topic_queue import gateway_adapter as _ultron_topic_queue\n'
+         '        from ultron_topic_queue.profile_commands import handle as _ultron_profile_command\n'
+         '        if await _ultron_profile_command(self, event):\n'
+         '            return\n'
          '        await _ultron_topic_queue.control_command(self, event)\n'),
+        ('        reply_to_id, reply_to_text = self._reply_context(message)',
+         '        from ultron_topic_queue.profile_commands import apply_source as _ultron_profile_source\n'
+         '        _ultron_profile_source(self, source)\n'
+         '        reply_to_id, reply_to_text = self._reply_context(message)'),
+        ('        menu_commands, hidden_count = await asyncio.to_thread(telegram_menu_commands, max_commands=max_commands)\n'
+         '        bot_commands = [BotCommand(name, desc) for name, desc in menu_commands]',
+         '        menu_commands, hidden_count = await asyncio.to_thread(telegram_menu_commands, max_commands=max_commands)\n'
+         '        from ultron_topic_queue.profile_commands import menu as _ultron_profile_menu\n'
+         '        menu_commands = await asyncio.to_thread(_ultron_profile_menu, self, menu_commands, max_commands)\n'
+         '        bot_commands = [BotCommand(name, desc) for name, desc in menu_commands]'),
     ],
     'gateway/kanban_watchers.py': [
         ('                    results = await _to_thread_process_service(dispatcher.tick_once)',

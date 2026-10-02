@@ -1,5 +1,13 @@
 # O time do Ultron — nomes, personalidades e especialidades
 
+Atualizacao de 02/10/2026: o principal aparece como **Ultron** (id nativo
+`default`). Comandos `/ultron`, `/pink`, `/cerebro`, `/cris`, `/greg` e os demais
+selecionam o perfil persistentemente na conversa; `/perfil` informa a escolha.
+Ver [perfis persistentes](docs/PERFIS-PERSISTENTES.md). Ultron preserva sua alma
+com voz Jarvis; Pink/Cerebro adotam as referencias do desenho e Cris/Greg as
+de Todo Mundo Odeia o Chris. Bordoes breves sao opcionais e contextuais; o tom
+dos documentos profissionais e as permissoes permanecem adequados ao dominio.
+
 O **Ultron** é o orquestrador. Cada especialista é um **perfil do Hermes**
 (`/root/.hermes/profiles/<nome>/`) com seu próprio `SOUL.md` (identidade,
 personalidade e diretrizes), memória e conjunto de ferramentas. Todos falam

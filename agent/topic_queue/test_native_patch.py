@@ -119,6 +119,11 @@ def adapter_stub(monkeypatch):
     package.gateway_adapter = adapter
     monkeypatch.setitem(sys.modules, 'ultron_topic_queue', package)
     monkeypatch.setitem(sys.modules, 'ultron_topic_queue.gateway_adapter', adapter)
+    commands = ModuleType('ultron_topic_queue.profile_commands')
+    async def profile_command(instance, event):
+        return False
+    commands.handle = profile_command
+    monkeypatch.setitem(sys.modules, 'ultron_topic_queue.profile_commands', commands)
     return adapter, calls
 
 
