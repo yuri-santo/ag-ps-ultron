@@ -117,11 +117,22 @@ class Evidence:
         return row[0] if row else 'active'
 
     def policy(self, scope, topic_id, version, contract):
-        domain = contract['profile']
-        reviewers = {domain: [domain], 'tanos': ['audit']}
-        if domain == 'tanos':
-            reviewers['ironman'] = ['audit', domain]
-        return dict(id='local-committee', version='1', required_competencies=[domain, 'audit'],
+        # Already frozen deliveries retain their original policy and receipts.
+        with sqlite3.connect(f'file:{self.runtime.store.path}?mode=ro', uri=True) as db:
+            table = db.execute("SELECT 1 FROM sqlite_master WHERE name='delivery_prepared'").fetchone()
+            row = db.execute('SELECT payload FROM delivery_prepared WHERE scope=? AND topic_id=? AND version=?',
+                             (scope.key(), topic_id, version)).fetchone() if table else None
+        if row:
+            return json.loads(row[0])['policy']
+        try:
+            from .review_policy import pertinent_profiles
+        except ImportError:
+            from review_policy import pertinent_profiles
+        request = '\n'.join(s['text'] for s in contract.get('spans', []) if s['kind'] == 'request')
+        domains = pertinent_profiles(request, contract['profile'], self.runtime.roster)
+        reviewers = {domain: [domain] for domain in domains}
+        return dict(id='local-committee', version='2', required_competencies=domains,
+                    allow_technical_unavailable=True,
                     required_reviewers=sorted(reviewers), reviewers=reviewers)
 
 
@@ -339,14 +350,15 @@ class Runtime:
                                  'WHERE a.scope=? AND a.topic_id=? AND a.version<? ORDER BY a.version',
                                  (scope.key(), data['topic_id'], data['version'])).fetchall()
             for answer in answers:
-                context.append(canonical({'previous_approved_answer': answer['version'],
+                context.append(canonical({'previous_delivered_answer': answer['version'],
                     'historical_context_only': True, 'text': json.loads(answer['payload'])['parts']}))
             for parent in contract['depends_on']:
                 approval = db.execute('SELECT prepared_id FROM delivery_approvals WHERE topic_id=? AND version=?',
                                       (parent['topic_id'], parent['version'])).fetchone()
                 require(approval is not None, 'Dependency not approved')
                 payload = json.loads(db.execute('SELECT payload FROM delivery_prepared WHERE id=?', (approval[0],)).fetchone()[0])
-                context.append(canonical({'approved_dependency': parent, 'text': payload['parts']}))
+                context.append(canonical({'delivered_dependency': parent, 'text': payload['parts'],
+                                          'review_status': payload['execution']['model_review']}))
         return request, '\n\n'.join(context)
 
     def _execution(self, task, scope, data, worker, rewriter=None):
@@ -452,6 +464,10 @@ class Runtime:
                           evidence=result.get('evidence', []), contract=data['contract'])
             final_hash = digest(canonical(frozen))
             policy = self.proofs.policy(scope, data['topic_id'], data['version'], data['contract'])
+            try:
+                from .review_policy import collect, warning
+            except ImportError:
+                from review_policy import collect, warning
             verdicts = {}
             for reviewer_profile in policy['required_reviewers']:
                 key = task.id + ':' + final_hash + ':' + reviewer_profile
@@ -467,33 +483,40 @@ class Runtime:
                         call = reviewer
                     with self.store._transaction() as db:
                         attempts = db.execute('SELECT attempts FROM host_stages WHERE card_id=?', (task.id,)).fetchone()[0]
-                    vote = call(frozen, candidate['request'], profile=reviewer_profile,
-                                home=self.home, proof_id=key, context=candidate['context'], attempt=attempts)
+                    vote = collect(frozen, candidate['request'], [reviewer_profile],
+                                   home=self.home, proof_id=key, context=candidate['context'],
+                                   attempt=attempts, call=call)[reviewer_profile]
                     if vote.get('completed') is True and vote.get('verdict') == 'revise':
                         require(isinstance(vote.get('issues'), list) and bool(vote['issues']), 'Revision needs concrete findings')
                         self.proofs.put('feedback', task.id + ':' + digest(result['answer']), vote)
                         raise QueueError('Text correction required')
-                    require(vote.get('completed') is True and vote.get('verdict') == 'approved'
+                    unavailable = vote.get('verdict') == 'unavailable' and bool(vote.get('technical_error'))
+                    require(unavailable or (vote.get('completed') is True and vote.get('verdict') == 'approved'
                             and vote.get('checks') and vote.get('issues') == []
-                            and vote.get('served_identity'), 'Final review pending or rejected')
+                            and vote.get('served_identity')), 'Final review pending or rejected')
                     self.proofs.put('final-review', key, vote)
                 verdicts[reviewer_profile] = (key, vote)
-            execution_id = task.id + ':' + candidate['run_id']
+            notices = {name: vote for name, (_, vote) in verdicts.items() if vote['verdict'] == 'unavailable'}
+            notice = warning(notices)
+            execution_id = task.id + ':' + candidate['run_id'] + ':review-v2'
             execution = dict(scope=scope.key(), topic_id=data['topic_id'], version=data['version'],
                 run_id=execution_id, native_board=str(self.board_path), native_card_id=task.id,
                 profile=profile, contract_hash=digest(canonical(data['contract'])),
-                completed=True, model_review='approved', candidate=result['answer'], author=author,
+                completed=True, model_review='unvalidated' if notices else 'approved',
+                review_unavailable=notices, review_notice=notice, candidate=result['answer'], author=author,
                 served_identity=result['producer']['served_model'], candidate_hash=digest(result['answer']),
                 evidence_hashes=[item['result_sha256'] for item in result.get('evidence', [])])
             self.proofs.put('execution', execution_id, execution)
             prepared = self.delivery.prepare(scope, data['topic_id'], data['version'], run_id=execution_id)
-            require(prepared['parts'] == parts, 'Final text changed after review')
+            require(prepared['parts'] == format_parts(author + ': ' + result['answer'] + notice),
+                    'Final text changed after review')
             review_ids = []
             for name, (key, vote) in verdicts.items():
                 identity = digest(key + prepared['id'])
                 self.proofs.put('review', identity, dict(id=identity, prepared_id=prepared['id'],
                     binding_hash=prepared['id'], run_id=key, profile=name,
-                    served_identity=vote['served_identity'], completed=True, verdict='approved',
+                    served_identity=vote['served_identity'], completed=vote['completed'], verdict=vote['verdict'],
+                    technical_error=vote.get('technical_error'),
                     source_hash=digest(canonical(vote))))
                 review_ids.append(identity)
             approval = self.delivery.approve(scope, prepared['id'], review_ids)
@@ -502,7 +525,7 @@ class Runtime:
             except ImportError:
                 from speech import enqueue
             enqueue(self, approval['id'], result['answer'], candidate['request'])
-            self._finish(task, '\n'.join(parts), approval['id'])
+            self._finish(task, '\n'.join(prepared['parts']), approval['id'])
             self._release(scope)
         except Exception as exc:
             # No tool/model text in board failure messages. Review retries keep

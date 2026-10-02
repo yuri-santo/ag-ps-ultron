@@ -16,7 +16,8 @@ class Agent:
 
 class TriageTests(unittest.TestCase):
     def test_only_standalone_social_greetings_skip_network_review(self):
-        for request in ('Oi!', 'Tudo bem com você?', 'Bom dia', 'Obrigado!'):
+        for request in ('Oi!', 'Tudo bem com você?', 'Bom dia', 'Obrigado!',
+                        'ultron voce esta ai?', 'ta ai ultron?'):
             with self.subTest(request=request):
                 self.assertEqual(gate.triage_request(request), 'social')
         for request in ('Tudo bem com você? Analise meu contrato.',

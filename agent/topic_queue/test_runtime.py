@@ -119,7 +119,7 @@ def test_independent_later_topic_can_finish_and_deliver_first(runtime):
     assert runtime.delivery.dispatch_next(SCOPE, send)['status'] == 'empty'
 
 
-def test_review_failure_retries_review_only_and_persists_candidate(runtime):
+def test_review_timeout_delivers_once_with_named_warning(runtime):
     row = plan(runtime)[0]
     task = claim(runtime, row['native_card_id'])
     calls = []
@@ -129,13 +129,19 @@ def test_review_failure_retries_review_only_and_persists_candidate(runtime):
     runtime.run(task.id, task.current_run_id, worker=worker,
                 reviewer=lambda *a, **kw: (_ for _ in ()).throw(TimeoutError()))
     with runtime.connect() as conn:
-        assert runtime.kb.get_task(conn, task.id).status == 'scheduled'
-    runtime.maintain(now=10**12)
-    retried = claim(runtime, task.id)
-    runtime.run(task.id, retried.current_run_id, worker=worker, reviewer=review)
-    assert calls == [1]
-    with runtime.connect() as conn:
         assert runtime.kb.get_task(conn, task.id).status == 'done'
+    assert calls == [1]
+    sent = []
+    def send(scope, attempt_id, text):
+        sent.append(text)
+        return runtime.record_outcome(dict(scope=scope, attempt_id=attempt_id, text=text), 'test-timeout')
+    assert runtime.delivery.dispatch_next(SCOPE, send)['status'] == 'sent'
+    assert 'Nao validado por Greg' in sent[0]
+    assert 'Confianca limitada' in sent[0]
+    assert 'Tanos' not in sent[0]
+    with runtime.proofs.connect() as db:
+        votes = [json.loads(r[0]) for r in db.execute("SELECT payload FROM proofs WHERE kind='review'")]
+    assert votes[0]['verdict'] == 'unavailable' and votes[0]['completed'] is False
 
 
 def test_lost_execution_never_repeats_tools(runtime):

@@ -41,9 +41,12 @@ def review_final(prepared, request, *, profile, home, proof_id, context='', atte
     payload = dict(task=request, candidate=prepared['parts'], evidence=prepared.get('evidence', []),
                    context=context, binding_hash=binding)
     # Use an explicit existing route; aliases/producer echoes never prove independence.
-    routes = [r for r in config.get('reviewer_routes', policy['reviewers'])
+    configured = config.get('reviewer_routes', []) + policy['reviewers']
+    configured = list({r['model']: r for r in configured}.values())
+    routes = [r for r in configured
               if model_review.canonical_model(r['model']) != model_review.canonical_model(prepared['served_identity'])]
-    require(routes, 'No independent reviewer route configured')
+    if not routes:
+        raise ConnectionError('No independent reviewer route available')
     # A single bounded call per native attempt. Subsequent attempt rotates only
     # among already authorized routes; _call checks live provider/model policy.
     route = routes[int(attempt) % len(routes)]
@@ -85,7 +88,7 @@ def _call(home, model, system, user, max_tokens):
     response = call_llm(task='kanban_decomposer', provider='custom', model=model,
         base_url='http://127.0.0.1:20130/v1', api_key=config['model']['api_key'], tools=[],
         messages=[dict(role='system', content=system), dict(role='user', content=user)],
-        max_tokens=max_tokens, timeout=60, temperature=0)
+        max_tokens=max_tokens, timeout=20, temperature=0)
     require(len(response.choices) == 1 and response.choices[0].finish_reason == 'stop', 'Incomplete review')
     message = response.choices[0].message
     require(not getattr(message, 'tool_calls', None) and not getattr(message, 'function_call', None), 'Tools forbidden')

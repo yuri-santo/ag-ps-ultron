@@ -43,7 +43,8 @@ def test_model_body_clears_stale_identity(monkeypatch):
     assert agent.last_served_model is None
 
 
-def test_package_sends_all_parts_and_preserves_receipts(runtime, monkeypatch):
+@pytest.mark.parametrize('degraded', [False, True])
+def test_package_sends_all_parts_and_preserves_receipts(runtime, monkeypatch, degraded):
     import native_delivery as delivery
     import gateway_adapter
     doc = runtime.home.parent / 'report.docx'
@@ -51,11 +52,15 @@ def test_package_sends_all_parts_and_preserves_receipts(runtime, monkeypatch):
     key = delivery.save(runtime, SCOPE, dict(candidate='Resposta\nMEDIA:' + str(doc),
         task_id='turn', request='relatorio', producer={}, evidence=[]))
     monkeypatch.setattr(delivery, 'review_package', lambda p, *a: dict(completed=True,
-        status='approved', output_sha256=delivery.sha(p['text'].encode())))
+        status='unvalidated' if degraded else 'approved',
+        delivery_notice='\n\nConfianca limitada: revisao incompleta.' if degraded else '',
+        approval_completed=not degraded, confidence='limited' if degraded else None,
+        output_sha256=delivery.sha(p['text'].encode())))
     calls = []
 
     async def text(*args):
         calls.append('text')
+        assert ('Confianca limitada' in args[-1]) is degraded
         return '100'
 
     async def file(*args):

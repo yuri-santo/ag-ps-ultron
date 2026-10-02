@@ -119,7 +119,16 @@ class Delivery:
                         profile=contract['profile'], contract_hash=_hash(contract))
         require(type(proof.get('version')) is int and
                 all(proof.get(k) == v for k, v in expected.items()), 'Execution binding mismatch')
-        require(proof.get('completed') is True and proof.get('model_review') == 'approved',
+        degraded = (proof.get('model_review') == 'unvalidated' and
+                    self._policy(scope, topic_id, version, contract).get('allow_technical_unavailable') is True)
+        if degraded:
+            try:
+                from .review_policy import warning
+            except ImportError:
+                from review_policy import warning
+            require(bool(proof.get('review_unavailable')) and
+                    proof.get('review_notice') == warning(proof['review_unavailable']), 'Missing review disclosure')
+        require(proof.get('completed') is True and (proof.get('model_review') == 'approved' or degraded),
                 'Execution is incomplete or model review is not approved')
         require(all(nonempty(proof.get(k)) for k in ('candidate', 'author', 'served_identity')),
                 'Execution author, served identity and candidate required')
@@ -162,7 +171,7 @@ class Delivery:
             self._active(scope, topic_id, version)
             execution = self._execution(db, scope, topic_id, version, run_id, contract)
             prefix = execution['author'] + ': '
-            parts = self._read(self.formatter, prefix + execution['candidate'])
+            parts = self._read(self.formatter, prefix + execution['candidate'] + execution.get('review_notice', ''))
             require(isinstance(parts, list) and bool(parts) and all(nonempty(x) for x in parts),
                     'Formatter must return nonempty final text parts')
             require(parts[0].startswith(prefix), 'Formatter must preserve the real author prefix')
@@ -208,22 +217,32 @@ class Delivery:
             require(isinstance(proof, dict) and proof.get('id') == proof_id
                     and proof.get('prepared_id') == prepared_id and proof.get('binding_hash') == prepared_id,
                     'Review binding mismatch')
-            require(proof.get('completed') is True and proof.get('verdict') == 'approved',
+            unavailable = (policy.get('allow_technical_unavailable') is True and
+                           proof.get('verdict') == 'unavailable' and proof.get('completed') is False and
+                           nonempty(proof.get('technical_error')))
+            require(unavailable or (proof.get('completed') is True and proof.get('verdict') == 'approved'),
                     'Review is incomplete or rejected')
             profile = proof.get('profile')
             require(profile in policy['reviewers'] and profile not in profiles, 'Invalid reviewer profile')
             require(nonempty(proof.get('run_id')) and proof['run_id'] != execution['run_id']
-                    and proof['run_id'] not in runs and nonempty(proof.get('served_identity')),
+                    and proof['run_id'] not in runs and (unavailable or nonempty(proof.get('served_identity'))),
                     'Invalid review execution identity')
             profiles.add(profile)
             runs.add(proof['run_id'])
             competencies.update(policy['reviewers'][profile])
-            independent |= (profile != execution['profile']
+            if unavailable:
+                require(profile in execution.get('review_unavailable', {}) and
+                        execution['review_unavailable'][profile].get('technical_error') == proof['technical_error']
+                        and execution.get('review_notice') and execution['model_review'] == 'unvalidated',
+                        'Unavailable reviewer must be disclosed')
+            independent |= (not unavailable and (profile != execution['profile'] or policy.get('version') == '2')
                             and proof['served_identity'] != execution['served_identity'])
             found.append(proof)
         require(set(policy['required_competencies']) <= competencies, 'Missing required competency approval')
         require(set(policy['required_reviewers']) <= profiles, 'Missing mandatory reviewer approval')
-        require(independent, 'An independent served reviewer is required')
+        require(independent or (policy.get('allow_technical_unavailable') is True and
+                                all(p.get('verdict') == 'unavailable' for p in found)),
+                'An independent served reviewer is required')
         return found
 
     def approve(self, scope, prepared_id, review_ids):

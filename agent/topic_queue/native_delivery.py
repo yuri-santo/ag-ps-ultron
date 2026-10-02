@@ -117,15 +117,11 @@ def capture(ctx, result, gateway):
 
 
 def review_package(payload, identity, attempt):
-    if '/root/ultron-local' not in sys.path:
-        sys.path.insert(0, '/root/ultron-local')
-    import model_review
+    from .subject_review import review_answer
     check_files(payload)
     evidence = payload['evidence'] + [dict(kind='artifact_snapshot', **f) for f in payload['files']]
-    revision = sha(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode())[:16]
-    return model_review.review_output(task_id='delivery:' + identity + ':' + revision + ':' + str(attempt),
-        producer=payload['producer'], output=payload['text'], request=payload['request'],
-        evidence=evidence, task_kind='answer', context={'delivery_mode': 'interactive'})
+    return review_answer(payload['text'], payload['request'], payload['producer'], evidence,
+                         'delivery:' + identity + ':' + str(attempt))
 
 
 async def send_document(adapter, scope, item):
@@ -168,8 +164,11 @@ async def process(runtime, adapter, scope, row):
                            (attempt, time.time() + 600, key))
             verdict = await asyncio.to_thread(review_package, payload, key, attempt)
             approved = (verdict.get('completed') is True and
-                        verdict.get('status') in ('approved', 'not_required') and
+                        verdict.get('status') in ('approved', 'not_required', 'unvalidated') and
                         verdict.get('output_sha256') == sha(payload['text'].encode()))
+            if verdict.get('status') == 'unvalidated':
+                approved = approved and bool(verdict.get('delivery_notice')) and (
+                    verdict.get('approval_completed') is False and verdict.get('confidence') == 'limited')
             with runtime.store._transaction() as db:
                 if db.execute('SELECT state FROM host_native_delivery WHERE id=?', (key,)).fetchone()[0] == 'cancelled':
                     return
@@ -179,7 +178,7 @@ async def process(runtime, adapter, scope, row):
                     db.execute('UPDATE host_native_delivery SET state=?,review=?,reason=?,due=? WHERE id=?',
                         (state, json.dumps(verdict), verdict.get('reason'), time.time() + 60 * attempt, key))
                     return
-                parts = [('text', p) for p in format_parts(payload['text'])]
+                parts = [('text', p) for p in format_parts(payload['text'] + verdict.get('delivery_notice', ''))]
                 parts += [('document', json.dumps(f)) for f in payload['files']]
                 db.executemany('INSERT OR IGNORE INTO host_native_parts(delivery_id,ordinal,kind,payload) VALUES(?,?,?,?)',
                                [(key, i, kind, value) for i, (kind, value) in enumerate(parts)])

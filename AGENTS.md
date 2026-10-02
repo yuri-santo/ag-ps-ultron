@@ -1,5 +1,12 @@
 # O time do Ultron — nomes, personalidades e especialidades
 
+Politica de entrega atualizada em 02/10/2026: revisao apenas por assunto;
+indisponibilidade tecnica de revisor libera a resposta com **Confianca limitada:
+revisao incompleta**, sem registrar aprovacao inexistente. Tanos nao e etapa
+universal. Ver [revisao por assunto](docs/REVISAO-POR-ASSUNTO.md). Esta regra
+substitui exigencias gerais de bloquear entregas por falha tecnica do revisor;
+nao altera permissoes de ferramentas nem aprova acoes externas.
+
 Atualizacao de 02/10/2026: o principal aparece como **Ultron** (id nativo
 `default`). Comandos `/ultron`, `/pink`, `/cerebro`, `/cris`, `/greg` e os demais
 selecionam o perfil persistentemente na conversa; `/perfil` informa a escolha.

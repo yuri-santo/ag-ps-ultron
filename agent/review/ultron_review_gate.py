@@ -4,6 +4,8 @@ import time
 import hashlib
 import json
 import re
+import os
+from pathlib import Path
 
 def redact(value):
     value=str(value)
@@ -45,7 +47,8 @@ def tool_evidence(messages):
 def broker():
     root='/root/ultron-local'
     if root not in sys.path:sys.path.insert(0,root)
-    import model_review
+    import importlib, model_review
+    importlib.reload(model_review)
     return model_review
 
 def producer(agent):
@@ -166,12 +169,14 @@ def triage_request(request):
     """Only a complete standalone social utterance admits local validation."""
     normalized = re.sub(r'\s+', ' ', str(request or '').strip().lower())
     normalized = normalized.strip(' \t\r\n!?.,')
+    normalized = re.sub(r'^(?:/)?ultron[ ,:]+|[ ,]+ultron$', '', normalized).strip(' ,')
     return 'social' if any(re.fullmatch(pattern, normalized) for pattern, _ in _SOCIAL_REPLIES) else 'review'
 
 
 def social_response(request, candidate):
     """Use a closed response set, never approve arbitrary short model output."""
     normalized = re.sub(r'\s+', ' ', str(request or '').strip().lower()).strip(' \t\r\n!?.,')
+    normalized = re.sub(r'^(?:/)?ultron[ ,:]+|[ ,]+ultron$', '', normalized).strip(' ,')
     fallback = next((reply or normalized.capitalize() + '! Como posso ajudar?'
                      for pattern, reply in _SOCIAL_REPLIES if re.fullmatch(pattern, normalized)),
                     'Oi! Como posso ajudar?')
@@ -211,6 +216,30 @@ def review_final(agent,text,turn_id):
         }
         return visible
     agent._ultron_review_verdict = None
+    if not str(text or '').strip():
+        return text
+    if getattr(agent, '_ultron_final_review_owner', None) == 'topic_queue':
+        agent._ultron_review_verdict = dict(status='not_required', completed=True,
+            reason='deferred_to_final_subject_review', turn_id=turn_id,
+            output_sha256=hashlib.sha256(text.encode()).hexdigest(), visible_text=text,
+            input_sha256=input_hash)
+        return text
+    policy_path = Path(os.environ.get('ULTRON_BASE_HOME', '/root/.hermes')) / 'topic-queue/config.json'
+    try:
+        subject_enabled = json.loads(policy_path.read_text()).get('subject_review_v2') is True
+    except (OSError, ValueError):
+        subject_enabled = False
+    if subject_enabled:
+        try:
+            from ultron_topic_queue.subject_review import review_answer
+            record = review_answer(text, raw_req, producer(agent), evidence, turn_id)
+        except Exception as exc:
+            record = dict(status='pending_review', completed=False, reason='review_invalid:' + type(exc).__name__)
+        visible = text + record.get('delivery_notice', '') if record.get('completed') is True else (
+            'A resposta precisa de correcao antes da entrega. A tarefa continua registrada.')
+        agent._ultron_review_verdict = dict(record, turn_id=turn_id, input_sha256=input_hash,
+                                           visible_text=visible)
+        return visible
     if not hold_output(agent):return text
     try:
         record=broker().review_output(task_id=turn_id,producer=producer(agent),output=text,

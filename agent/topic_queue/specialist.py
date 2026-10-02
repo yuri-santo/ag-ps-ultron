@@ -53,6 +53,7 @@ def main():
                 'Quando perguntado sobre o perfil ativo, informe seu nome real. '
                 'Bordao curto so quando couber; nunca substitui a resposta solicitada.')
             super().__init__(*args, **kwargs)
+            self._ultron_final_review_owner = 'topic_queue'
     run_agent.AIAgent = TopicAgent
     from agent import turn_response_intake
     original = turn_response_intake.normalize_response_for_agent
