@@ -21,9 +21,11 @@ preservados. Emails, tokens e senhas nao sao publicados neste repositorio.
 
 ## Combos
 
-`codex-free` contem somente os tres modelos acima, nessa ordem.
+Por preferencia de economia, a ordem Codex foi ajustada para
+`cx/gpt-5.6-luna`, `cx/gpt-6-luna`, `cx/gpt-5.6-terra`.
+`codex-free` contem somente esses tres modelos, nessa ordem.
 `hermes-reasoning`, `hermes-coding` e `free-fallback` receberam os mesmos modelos
-antes dos fallbacks existentes. `hermes-fast` usa Luna 6, Luna 5.6 e Terra 5.6.
+antes dos fallbacks existentes. `hermes-fast` usa a mesma ordem economica.
 O combo `Thor` preserva seu primeiro modelo SAP e acrescenta Codex em seguida.
 `antigravity-rotation` nao foi alterado. Referencias antigas Codex em combos
 editados foram substituidas, sem apagar modelos ou credenciais de provedores.
@@ -50,3 +52,20 @@ Ha snapshots antes e depois da atualizacao. O container anterior esta parado
 como `ultron-9router-before-20261007`; nao o iniciar junto ao atual nem restaurar
 tokens antigos sem necessidade, pois provedores podem rotacionar refresh tokens.
 Backup de credenciais nao garante que uma sessao continue valida no futuro.
+
+## Economia e diagnostico Antigravity
+
+A prioridade economica foi relida pela API nos seis combos com Codex.
+O teste de `codex-free` retornou HTTP 200 em 1234 ms. Isso e um teste pontual,
+nao um benchmark nem garantia de duracao da cota. A documentacao oficial
+classifica GPT-5.6 Luna como otimizado para custo, aproximadamente na classe
+nano: https://developers.openai.com/api/docs/models/gpt-5.6-luna
+Precos da API nao determinam a contabilizacao das cotas do Codex Free.
+
+Duas conexoes Antigravity sem cotas retornaram HTTP 403 em
+`retrieveUserQuotaSummary`, com `Verify your account to continue.`.
+`loadCodeAssist` nao retornou plano nem projeto; `fetchAvailableModels`
+retornou catalogo, mas isso nao comprova disponibilidade para inferencia.
+O 9Router 0.5.95 suprime o erro da consulta semanal e apresenta cotas vazias.
+E necessario verificar as contas no aplicativo oficial e consultar novamente;
+nao inventar cotas, plano, projeto ou contornar a verificacao do provedor.
