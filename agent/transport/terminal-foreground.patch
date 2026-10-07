@@ -1,0 +1,13 @@
+--- a/tools/terminal_tool.py
++++ b/tools/terminal_tool.py
+@@ -1445,6 +1445,10 @@
+     if not isinstance(heartbeat, int) or isinstance(heartbeat, bool) or heartbeat < 0:
+         return tool_error("heartbeat must be a whole number of seconds (min 60).")
+     if not args.get("background", False):
++        # Some providers fill optional heartbeat even when notifications are
++        # explicitly disabled. Preserve foreground execution in that case.
++        if notify is False and not watch_patterns and not notify_on_complete:
++            heartbeat = 0
+         if notify or watch_patterns or notify_on_complete or heartbeat:
+             return tool_error(
+                 "notify/heartbeat only apply to background commands (foreground "
